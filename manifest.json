@@ -1,0 +1,110 @@
+{
+  "dxt_version": "0.1",
+  "name": "Spotify (AppleScript)",
+  "version": "0.0.1",
+  "description": "Control Spotify via AppleScript",
+  "author": {
+    "name": "Kenneth Lien",
+    "url": "https://kennethlien.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/k6l3/spotify-dxt"
+  },
+  "homepage": "https://github.com/k6l3/spotify-dxt",
+  "documentation": "https://github.com/k6l3/spotify-dxt",
+  "support": "https://github.com/k6l3/spotify-dxt/issues",
+  "icon": "icon.png",
+  "scripts": {
+    "start": "node server/index.js",
+    "build": "npx @anthropic-ai/dxt pack"
+  },
+  "server": {
+    "type": "node",
+    "entry_point": "server/index.js",
+    "mcp_config": {
+      "command": "node",
+      "args": [
+        "${__dirname}/server/index.js"
+      ],
+      "env": {}
+    }
+  },
+  "tools": [
+    {
+      "name": "spotify_play",
+      "description": "Resume playback"
+    },
+    {
+      "name": "spotify_pause",
+      "description": "Pause playback"
+    },
+    {
+      "name": "spotify_playpause",
+      "description": "Toggle play/pause"
+    },
+    {
+      "name": "spotify_next_track",
+      "description": "Skip to the next track"
+    },
+    {
+      "name": "spotify_previous_track",
+      "description": "Skip to the previous track"
+    },
+    {
+      "name": "spotify_play_track",
+      "description": "Start playback of a track by URI"
+    },
+    {
+      "name": "spotify_get_current_track",
+      "description": "Get information about the current playing track"
+    },
+    {
+      "name": "spotify_get_player_state",
+      "description": "Get the current player state (playing, paused, stopped)"
+    },
+    {
+      "name": "spotify_set_volume",
+      "description": "Set the sound output volume (0-100)"
+    },
+    {
+      "name": "spotify_get_volume",
+      "description": "Get the current volume"
+    },
+    {
+      "name": "spotify_set_position",
+      "description": "Set the player position within the current track"
+    },
+    {
+      "name": "spotify_get_position",
+      "description": "Get the player position within the current track"
+    },
+    {
+      "name": "spotify_set_repeat",
+      "description": "Turn repeat on or off"
+    },
+    {
+      "name": "spotify_get_repeat",
+      "description": "Get repeat status"
+    },
+    {
+      "name": "spotify_set_shuffle",
+      "description": "Turn shuffle on or off"
+    },
+    {
+      "name": "spotify_get_shuffle",
+      "description": "Get shuffle status"
+    }
+  ],
+  "keywords": [
+    "mcp",
+    "spotify",
+    "music",
+    "applescript",
+    "osascript"
+  ],
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^0.6.0"
+  },
+  "license": "MIT"
+}
