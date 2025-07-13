@@ -3,6 +3,7 @@
   "name": "Spotify (AppleScript)",
   "version": "0.0.1",
   "description": "Control Spotify via AppleScript",
+  "long_description": "This extension allows you to control Spotify using AppleScript commands. It provides a set of tools to manage playback, volume, and player state. Tell Claude about a feeling or vibe you have - and let it spin some tunes for you.",
   "author": {
     "name": "Kenneth Lien",
     "url": "https://kennethlien.com"
@@ -103,8 +104,5 @@
     "applescript",
     "osascript"
   ],
-  "dependencies": {
-    "@modelcontextprotocol/sdk": "^0.6.0"
-  },
   "license": "MIT"
 }
