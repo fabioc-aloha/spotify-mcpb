@@ -28,7 +28,7 @@ What can you do with Spotify MCPB? 🤖
 "Create a workout playlist with high-energy tracks"
 → Claude searches & builds it instantly
 
-"Analyze my Discover Weekly"  
+"Analyze my Discover Weekly"
 → Get detailed audio feature analysis
 
 "Skip to the next track"
@@ -97,7 +97,7 @@ I built an open-source tool that lets you control Spotify and create playlists u
 
 **What you can do:**
 - Control playback: "Skip to the next track and turn up the volume"
-- Create playlists: "Make a workout playlist with high-energy tracks"  
+- Create playlists: "Make a workout playlist with high-energy tracks"
 - Get recommendations: "Find me chill jazz for studying"
 - Analyze playlists: "Analyze my Discover Weekly and tell me the vibe"
 
@@ -161,7 +161,7 @@ Made a tool that extends Claude Desktop with 16 Spotify controls using MCP!
 
 **What it does:**
 - Natural language Spotify control
-- AI-powered playlist creation  
+- AI-powered playlist creation
 - Audio analysis and recommendations
 - Smart track search and curation
 
@@ -171,7 +171,7 @@ Made a tool that extends Claude Desktop with 16 Spotify controls using MCP!
 - "Analyze my Discover Weekly"
 - "Find similar songs to what I'm playing"
 
-**Setup:** 
+**Setup:**
 - Download the .mcpb bundle
 - Double-click to install in Claude Desktop
 - Get Spotify API credentials (free)
@@ -284,7 +284,7 @@ Features:
 
 ## 🗨️ Hacker News
 
-### Title: 
+### Title:
 "Show HN: Spotify MCPB – Control Spotify with Claude Desktop using MCP"
 
 ### Post:
