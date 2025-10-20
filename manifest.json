@@ -1,34 +1,83 @@
 {
-  "dxt_version": "0.1",
-  "name": "Spotify (AppleScript)",
-  "version": "0.0.1",
-  "description": "Control Spotify via AppleScript",
-  "long_description": "This extension allows you to control Spotify using AppleScript commands. It provides a set of tools to manage playback, volume, and player state. Tell Claude about a feeling or vibe you have - and let it spin some tunes for you.",
+  "manifest_version": "0.2",
+  "name": "spotify-mcpb",
+  "display_name": "Spotify Playlist Creator",
+  "version": "0.2.1",
+  "description": "Control Spotify and create playlists using the Spotify Web API",
+  "long_description": "This MCPB extension provides comprehensive Spotify control and playlist management capabilities. Use it to play music, control playback, search for tracks, create and curate playlists, add tracks, analyze playlists, and more. Works cross-platform (Windows, macOS, Linux) using the Spotify Web API. Perfect for building custom music workflows and playlist curation with AI assistance.",
   "author": {
-    "name": "Kenneth Lien",
-    "url": "https://kennethlien.com"
+    "name": "Fabio C",
+    "url": "https://github.com/fabioc-aloha"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/k6l3/spotify-dxt"
+    "url": "https://github.com/fabioc-aloha/spotify-mcpb"
   },
-  "homepage": "https://github.com/k6l3/spotify-dxt",
-  "documentation": "https://github.com/k6l3/spotify-dxt",
-  "support": "https://github.com/k6l3/spotify-dxt/issues",
-  "icon": "icon.png",
-  "scripts": {
-    "start": "node server/index.js",
-    "build": "npx @anthropic-ai/dxt pack"
+  "homepage": "https://github.com/fabioc-aloha/spotify-mcpb",
+  "documentation": "https://github.com/fabioc-aloha/spotify-mcpb#readme",
+  "support": "https://github.com/fabioc-aloha/spotify-mcpb/issues",
+  "keywords": [
+    "spotify",
+    "music",
+    "playlist",
+    "audio",
+    "web-api",
+    "mcp",
+    "mcpb"
+  ],
+  "license": "MIT",
+  "privacy_policies": [
+    "https://www.spotify.com/legal/privacy-policy/"
+  ],
+  "compatibility": {
+    "claude_desktop": ">=0.10.0",
+    "platforms": ["win32", "darwin", "linux"],
+    "runtimes": {
+      "node": ">=18.0.0"
+    }
   },
   "server": {
     "type": "node",
     "entry_point": "server/index.js",
     "mcp_config": {
       "command": "node",
-      "args": [
-        "${__dirname}/server/index.js"
-      ],
-      "env": {}
+      "args": ["${__dirname}/server/index.js"],
+      "env": {
+        "SPOTIFY_CLIENT_ID": "${user_config.client_id}",
+        "SPOTIFY_CLIENT_SECRET": "${user_config.client_secret}",
+        "SPOTIFY_REFRESH_TOKEN": "${user_config.refresh_token}",
+        "LOG_LEVEL": "${user_config.log_level}"
+      }
+    }
+  },
+  "user_config": {
+    "client_id": {
+      "type": "string",
+      "title": "Spotify Client ID",
+      "description": "Your Spotify application Client ID from https://developer.spotify.com/dashboard",
+      "sensitive": true,
+      "required": true
+    },
+    "client_secret": {
+      "type": "string",
+      "title": "Spotify Client Secret",
+      "description": "Your Spotify application Client Secret",
+      "sensitive": true,
+      "required": true
+    },
+    "refresh_token": {
+      "type": "string",
+      "title": "Spotify Refresh Token",
+      "description": "Your Spotify Refresh Token. After installation, ask Claude: 'Help me get a Spotify refresh token' to obtain this automatically.",
+      "sensitive": true,
+      "required": true
+    },
+    "log_level": {
+      "type": "string",
+      "title": "Log Level",
+      "description": "Logging level: debug, info, warn, or error",
+      "default": "info",
+      "required": false
     }
   },
   "tools": [
@@ -41,10 +90,6 @@
       "description": "Pause playback"
     },
     {
-      "name": "spotify_playpause",
-      "description": "Toggle play/pause"
-    },
-    {
       "name": "spotify_next_track",
       "description": "Skip to the next track"
     },
@@ -53,56 +98,53 @@
       "description": "Skip to the previous track"
     },
     {
-      "name": "spotify_play_track",
-      "description": "Start playback of a track by URI"
-    },
-    {
       "name": "spotify_get_current_track",
-      "description": "Get information about the current playing track"
+      "description": "Get information about the currently playing track"
     },
     {
-      "name": "spotify_get_player_state",
-      "description": "Get the current player state (playing, paused, stopped)"
+      "name": "spotify_get_playback_state",
+      "description": "Get the current playback state"
     },
     {
       "name": "spotify_set_volume",
-      "description": "Set the sound output volume (0-100)"
+      "description": "Set the playback volume (0-100)"
     },
     {
-      "name": "spotify_get_volume",
-      "description": "Get the current volume"
+      "name": "spotify_search_tracks",
+      "description": "Search for tracks on Spotify"
     },
     {
-      "name": "spotify_set_position",
-      "description": "Set the player position within the current track"
+      "name": "spotify_create_playlist",
+      "description": "Create a new playlist"
     },
     {
-      "name": "spotify_get_position",
-      "description": "Get the player position within the current track"
+      "name": "spotify_add_tracks_to_playlist",
+      "description": "Add tracks to a playlist"
     },
     {
-      "name": "spotify_set_repeat",
-      "description": "Turn repeat on or off"
+      "name": "spotify_get_playlist",
+      "description": "Get playlist information and tracks"
     },
     {
-      "name": "spotify_get_repeat",
-      "description": "Get repeat status"
+      "name": "spotify_get_user_playlists",
+      "description": "Get the current user's playlists"
     },
     {
-      "name": "spotify_set_shuffle",
-      "description": "Turn shuffle on or off"
+      "name": "spotify_get_recommendations",
+      "description": "Get track recommendations based on seeds"
     },
     {
-      "name": "spotify_get_shuffle",
-      "description": "Get shuffle status"
+      "name": "spotify_get_audio_features",
+      "description": "Get audio features for tracks"
+    },
+    {
+      "name": "spotify_analyze_playlist",
+      "description": "Analyze a playlist's audio features and statistics"
+    },
+    {
+      "name": "spotify_get_refresh_token",
+      "description": "Generate a Spotify refresh token (interactive tool for getting credentials)"
     }
   ],
-  "keywords": [
-    "mcp",
-    "spotify",
-    "music",
-    "applescript",
-    "osascript"
-  ],
-  "license": "MIT"
+  "tools_generated": false
 }

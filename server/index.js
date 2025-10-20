@@ -1,385 +1,411 @@
 #!/usr/bin/env node
+import 'dotenv/config';
+import { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
+import SpotifyWebApi from 'spotify-web-api-node';
+import { SpotifyWebController } from './spotifyWebController.js';
+import { PlaylistController } from './playlistController.js';
+import { logger } from './logging.js';
+import { handleError, McpToolError, InvalidArgumentError } from './error.js';
+import { validateRequired, validateString, validateNumber, validateArray } from './validation.js';
 
-import { Server } from "@modelcontextprotocol/sdk/server/index.js";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import {
-  CallToolRequestSchema,
-  ListToolsRequestSchema,
-} from "@modelcontextprotocol/sdk/types.js";
-import { execFile } from "child_process";
-import { promisify } from "util";
-
-const execFileAsync = promisify(execFile);
-
-const OSASCRIPT_TIMEOUT = 30000;
-
-class SpotifyServer {
+class SpotifyMcpServer {
   constructor() {
     this.server = new Server(
-      {
-        name: "spotify",
-        version: "0.0.1",
-      },
-      {
-        capabilities: {
-          tools: {},
-        },
-      },
+      { name: 'spotify-mcpb', version: '0.2.1' },
+      { capabilities: { tools: {} } }
     );
-
+    
+    this.spotifyController = new SpotifyWebController();
+    this.playlistController = new PlaylistController(this.spotifyController);
+    
     this.setupHandlers();
-  }
-
-  async executeAppleScript(script) {
-    try {
-      const { stdout, stderr } = await execFileAsync(
-        "osascript",
-        ["-e", script],
-        {
-          timeout: OSASCRIPT_TIMEOUT,
-          maxBuffer: 1024 * 1024,
-        },
-      );
-      if (stderr) {
-        console.error("AppleScript stderr:", stderr);
-      }
-      return stdout.trim();
-    } catch (error) {
-      console.error("Failed to execute AppleScript:", error);
-      throw error;
-    }
   }
 
   setupHandlers() {
     this.server.setRequestHandler(ListToolsRequestSchema, async () => ({
       tools: [
         {
-          name: "spotify_play",
-          description: "Resume playback",
-          inputSchema: {
-            type: "object",
-            properties: {},
-          },
+          name: 'spotify_play',
+          description: 'Resume playback on the active Spotify device',
+          inputSchema: { type: 'object', properties: {}, required: [] }
         },
         {
-          name: "spotify_pause",
-          description: "Pause playback",
-          inputSchema: {
-            type: "object",
-            properties: {},
-          },
+          name: 'spotify_pause',
+          description: 'Pause playback on the active Spotify device',
+          inputSchema: { type: 'object', properties: {}, required: [] }
         },
         {
-          name: "spotify_playpause",
-          description: "Toggle play/pause",
-          inputSchema: {
-            type: "object",
-            properties: {},
-          },
+          name: 'spotify_next_track',
+          description: 'Skip to the next track',
+          inputSchema: { type: 'object', properties: {}, required: [] }
         },
         {
-          name: "spotify_next_track",
-          description: "Skip to the next track",
-          inputSchema: {
-            type: "object",
-            properties: {},
-          },
+          name: 'spotify_previous_track',
+          description: 'Skip to the previous track',
+          inputSchema: { type: 'object', properties: {}, required: [] }
         },
         {
-          name: "spotify_previous_track",
-          description: "Skip to the previous track",
+          name: 'spotify_set_volume',
+          description: 'Set the volume (0-100)',
           inputSchema: {
-            type: "object",
-            properties: {},
-          },
+            type: 'object',
+            properties: { volume: { type: 'number', minimum: 0, maximum: 100 } },
+            required: ['volume']
+          }
         },
         {
-          name: "spotify_play_track",
-          description: "Start playback of a track by URI",
+          name: 'spotify_get_current_track',
+          description: 'Get information about the currently playing track',
+          inputSchema: { type: 'object', properties: {}, required: [] }
+        },
+        {
+          name: 'spotify_get_playback_state',
+          description: 'Get the current playback state',
+          inputSchema: { type: 'object', properties: {}, required: [] }
+        },
+        {
+          name: 'spotify_search_tracks',
+          description: 'Search for tracks on Spotify',
           inputSchema: {
-            type: "object",
+            type: 'object',
             properties: {
-              uri: {
-                type: "string",
-                description: "The Spotify URI of the track to play",
-              },
-              context: {
-                type: "string",
-                description: "Optional context URI (playlist, album, etc)",
-              },
+              query: { type: 'string', minLength: 1 },
+              limit: { type: 'number', minimum: 1, maximum: 50, default: 20 }
             },
-            required: ["uri"],
-          },
+            required: ['query']
+          }
         },
         {
-          name: "spotify_get_current_track",
-          description: "Get information about the current playing track",
+          name: 'spotify_create_playlist',
+          description: 'Create a new playlist',
           inputSchema: {
-            type: "object",
-            properties: {},
-          },
-        },
-        {
-          name: "spotify_get_player_state",
-          description: "Get the current player state (playing, paused, stopped)",
-          inputSchema: {
-            type: "object",
-            properties: {},
-          },
-        },
-        {
-          name: "spotify_set_volume",
-          description: "Set the sound output volume (0-100)",
-          inputSchema: {
-            type: "object",
+            type: 'object',
             properties: {
-              volume: {
-                type: "integer",
-                description: "Volume level (0-100)",
-                minimum: 0,
-                maximum: 100,
-              },
+              name: { type: 'string', minLength: 1, maxLength: 100 },
+              description: { type: 'string', maxLength: 300 },
+              public: { type: 'boolean', default: true }
             },
-            required: ["volume"],
-          },
+            required: ['name']
+          }
         },
         {
-          name: "spotify_get_volume",
-          description: "Get the current volume",
+          name: 'spotify_add_tracks_to_playlist',
+          description: 'Add tracks to a playlist with deduplication',
           inputSchema: {
-            type: "object",
-            properties: {},
-          },
-        },
-        {
-          name: "spotify_set_position",
-          description: "Set the player position within the current track",
-          inputSchema: {
-            type: "object",
+            type: 'object',
             properties: {
-              position: {
-                type: "number",
-                description: "Position in seconds",
-                minimum: 0,
-              },
+              playlist_id: { type: 'string', minLength: 1 },
+              track_uris: { type: 'array', items: { type: 'string' }, minItems: 1 }
             },
-            required: ["position"],
-          },
+            required: ['playlist_id', 'track_uris']
+          }
         },
         {
-          name: "spotify_get_position",
-          description: "Get the player position within the current track",
+          name: 'spotify_get_playlist',
+          description: 'Get playlist details',
           inputSchema: {
-            type: "object",
-            properties: {},
-          },
+            type: 'object',
+            properties: { playlist_id: { type: 'string', minLength: 1 } },
+            required: ['playlist_id']
+          }
         },
         {
-          name: "spotify_set_repeat",
-          description: "Turn repeat on or off",
+          name: 'spotify_get_user_playlists',
+          description: 'Get the current user\'s playlists',
           inputSchema: {
-            type: "object",
+            type: 'object',
+            properties: { limit: { type: 'number', minimum: 1, maximum: 50, default: 20 } },
+            required: []
+          }
+        },
+        {
+          name: 'spotify_get_recommendations',
+          description: 'Get track recommendations based on seeds and audio features',
+          inputSchema: {
+            type: 'object',
             properties: {
-              enabled: {
-                type: "boolean",
-                description: "Enable or disable repeat",
-              },
+              seed_tracks: { type: 'array', items: { type: 'string' } },
+              seed_artists: { type: 'array', items: { type: 'string' } },
+              seed_genres: { type: 'array', items: { type: 'string' } },
+              limit: { type: 'number', minimum: 1, maximum: 100, default: 20 },
+              target_acousticness: { type: 'number', minimum: 0, maximum: 1 },
+              target_danceability: { type: 'number', minimum: 0, maximum: 1 },
+              target_energy: { type: 'number', minimum: 0, maximum: 1 },
+              target_valence: { type: 'number', minimum: 0, maximum: 1 },
+              target_tempo: { type: 'number', minimum: 0 }
             },
-            required: ["enabled"],
-          },
+            required: []
+          }
         },
         {
-          name: "spotify_get_repeat",
-          description: "Get repeat status",
+          name: 'spotify_get_audio_features',
+          description: 'Get audio features for tracks',
           inputSchema: {
-            type: "object",
-            properties: {},
-          },
+            type: 'object',
+            properties: { track_ids: { type: 'array', items: { type: 'string' }, minItems: 1 } },
+            required: ['track_ids']
+          }
         },
         {
-          name: "spotify_set_shuffle",
-          description: "Turn shuffle on or off",
+          name: 'spotify_analyze_playlist',
+          description: 'Analyze a playlist\'s audio features and statistics',
           inputSchema: {
-            type: "object",
+            type: 'object',
+            properties: { playlist_id: { type: 'string', minLength: 1 } },
+            required: ['playlist_id']
+          }
+        },
+        {
+          name: 'spotify_get_refresh_token',
+          description: 'Generate a Spotify refresh token for authentication. Step 1: Call with client_id and client_secret to get authorization URL. Step 2: Visit the URL in browser, authorize, then call again with the authorization_code from the redirect URL to get the refresh token.',
+          inputSchema: {
+            type: 'object',
             properties: {
-              enabled: {
-                type: "boolean",
-                description: "Enable or disable shuffle",
-              },
+              client_id: { type: 'string', minLength: 1, description: 'Spotify Client ID from Developer Dashboard' },
+              client_secret: { type: 'string', minLength: 1, description: 'Spotify Client Secret from Developer Dashboard' },
+              authorization_code: { type: 'string', description: 'Optional: The authorization code from the redirect URL after user authorizes the app' }
             },
-            required: ["enabled"],
-          },
-        },
-        {
-          name: "spotify_get_shuffle",
-          description: "Get shuffle status",
-          inputSchema: {
-            type: "object",
-            properties: {},
-          },
-        },
-      ],
+            required: ['client_id', 'client_secret']
+          }
+        }
+      ]
     }));
 
     this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
-      if (!request.params.name) {
-        throw new Error("Tool name is required");
-      }
-
-      const toolName = request.params.name;
-      const args = request.params.arguments || {};
-
       try {
-        let result;
-
-        switch (toolName) {
-          case "spotify_play":
-            result = await this.executeAppleScript(
-              'tell application "Spotify" to play',
-            );
-            break;
-
-          case "spotify_pause":
-            result = await this.executeAppleScript(
-              'tell application "Spotify" to pause',
-            );
-            break;
-
-          case "spotify_playpause":
-            result = await this.executeAppleScript(
-              'tell application "Spotify" to playpause',
-            );
-            break;
-
-          case "spotify_next_track":
-            result = await this.executeAppleScript(
-              'tell application "Spotify" to next track',
-            );
-            break;
-
-          case "spotify_previous_track":
-            result = await this.executeAppleScript(
-              'tell application "Spotify" to previous track',
-            );
-            break;
-
-          case "spotify_play_track":
-            const playScript = args.context
-              ? `tell application "Spotify" to play track "${args.uri}" in context "${args.context}"`
-              : `tell application "Spotify" to play track "${args.uri}"`;
-            result = await this.executeAppleScript(playScript);
-            break;
-
-          case "spotify_get_current_track":
-            const trackInfo = await this.executeAppleScript(`
-              tell application "Spotify"
-                if player state is not stopped then
-                  set trackName to name of current track
-                  set trackArtist to artist of current track
-                  set trackAlbum to album of current track
-                  set trackDuration to duration of current track
-                  set trackPopularity to popularity of current track
-                  set trackId to id of current track
-                  set trackUrl to spotify url of current track
-                  return "Name: " & trackName & "\\nArtist: " & trackArtist & "\\nAlbum: " & trackAlbum & "\\nDuration: " & trackDuration & " ms\\nPopularity: " & trackPopularity & "\\nID: " & trackId & "\\nURL: " & trackUrl
-                else
-                  return "No track is currently playing"
-                end if
-              end tell
-            `);
-            result = trackInfo;
-            break;
-
-          case "spotify_get_player_state":
-            const state = await this.executeAppleScript(
-              'tell application "Spotify" to return player state as string',
-            );
-            result = state;
-            break;
-
-          case "spotify_set_volume":
-            result = await this.executeAppleScript(
-              `tell application "Spotify" to set sound volume to ${args.volume}`,
-            );
-            break;
-
-          case "spotify_get_volume":
-            result = await this.executeAppleScript(
-              'tell application "Spotify" to return sound volume',
-            );
-            break;
-
-          case "spotify_set_position":
-            result = await this.executeAppleScript(
-              `tell application "Spotify" to set player position to ${args.position}`,
-            );
-            break;
-
-          case "spotify_get_position":
-            result = await this.executeAppleScript(
-              'tell application "Spotify" to return player position',
-            );
-            break;
-
-          case "spotify_set_repeat":
-            result = await this.executeAppleScript(
-              `tell application "Spotify" to set repeating to ${args.enabled}`,
-            );
-            break;
-
-          case "spotify_get_repeat":
-            result = await this.executeAppleScript(
-              'tell application "Spotify" to return repeating',
-            );
-            break;
-
-          case "spotify_set_shuffle":
-            result = await this.executeAppleScript(
-              `tell application "Spotify" to set shuffling to ${args.enabled}`,
-            );
-            break;
-
-          case "spotify_get_shuffle":
-            result = await this.executeAppleScript(
-              'tell application "Spotify" to return shuffling',
-            );
-            break;
-
+        const { name, arguments: args } = request.params;
+        
+        switch (name) {
+          case 'spotify_play': return await this.handlePlay();
+          case 'spotify_pause': return await this.handlePause();
+          case 'spotify_next_track': return await this.handleNextTrack();
+          case 'spotify_previous_track': return await this.handlePreviousTrack();
+          case 'spotify_set_volume': return await this.handleSetVolume(args);
+          case 'spotify_get_current_track': return await this.handleGetCurrentTrack();
+          case 'spotify_get_playback_state': return await this.handleGetPlaybackState();
+          case 'spotify_search_tracks': return await this.handleSearchTracks(args);
+          case 'spotify_create_playlist': return await this.handleCreatePlaylist(args);
+          case 'spotify_add_tracks_to_playlist': return await this.handleAddTracksToPlaylist(args);
+          case 'spotify_get_playlist': return await this.handleGetPlaylist(args);
+          case 'spotify_get_user_playlists': return await this.handleGetUserPlaylists(args);
+          case 'spotify_get_recommendations': return await this.handleGetRecommendations(args);
+          case 'spotify_get_audio_features': return await this.handleGetAudioFeatures(args);
+          case 'spotify_analyze_playlist': return await this.handleAnalyzePlaylist(args);
+          case 'spotify_get_refresh_token': return await this.handleGetRefreshToken(args);
           default:
-            throw new Error(`Unknown tool: ${toolName}`);
+            throw new InvalidArgumentError(`Unknown tool: ${name}`);
         }
-
-        return {
-          content: [
-            {
-              type: "text",
-              text: result,
-            },
-          ],
-        };
       } catch (error) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: `Error: ${error.message}`,
-            },
-          ],
-          isError: true,
-        };
+        if (error instanceof McpToolError) {
+          return error.toResponse();
+        }
+        return handleError(error).toResponse();
       }
     });
   }
 
+  async handlePlay() {
+    await this.spotifyController.play();
+    return { content: [{ type: 'text', text: JSON.stringify({ status: 'playing' }) }] };
+  }
+
+  async handlePause() {
+    await this.spotifyController.pause();
+    return { content: [{ type: 'text', text: JSON.stringify({ status: 'paused' }) }] };
+  }
+
+  async handleNextTrack() {
+    await this.spotifyController.skipToNext();
+    return { content: [{ type: 'text', text: JSON.stringify({ status: 'skipped to next track' }) }] };
+  }
+
+  async handlePreviousTrack() {
+    await this.spotifyController.skipToPrevious();
+    return { content: [{ type: 'text', text: JSON.stringify({ status: 'skipped to previous track' }) }] };
+  }
+
+  async handleSetVolume(args) {
+    validateRequired(args, ['volume']);
+    validateNumber(args.volume, 'volume', 0, 100, true);
+    await this.spotifyController.setVolume(Math.round(args.volume));
+    return { content: [{ type: 'text', text: JSON.stringify({ volume: args.volume }) }] };
+  }
+
+  async handleGetCurrentTrack() {
+    const track = await this.spotifyController.getCurrentTrack();
+    return { content: [{ type: 'text', text: JSON.stringify(track) }] };
+  }
+
+  async handleGetPlaybackState() {
+    const state = await this.spotifyController.getPlaybackState();
+    return { content: [{ type: 'text', text: JSON.stringify(state) }] };
+  }
+
+  async handleSearchTracks(args) {
+    validateRequired(args, ['query']);
+    validateString(args.query, 'query', 1);
+    const limit = args.limit || 20;
+    validateNumber(limit, 'limit', 1, 50, true);
+    const tracks = await this.spotifyController.searchTracks(args.query, limit);
+    return { content: [{ type: 'text', text: JSON.stringify({ tracks }) }] };
+  }
+
+  async handleCreatePlaylist(args) {
+    validateRequired(args, ['name']);
+    validateString(args.name, 'name', 1, 100);
+    if (args.description) {
+      validateString(args.description, 'description', 0, 300);
+    }
+    const playlist = await this.spotifyController.createPlaylist(
+      args.name,
+      args.description || '',
+      args.public !== false
+    );
+    return { content: [{ type: 'text', text: JSON.stringify(playlist) }] };
+  }
+
+  async handleAddTracksToPlaylist(args) {
+    validateRequired(args, ['playlist_id', 'track_uris']);
+    validateString(args.playlist_id, 'playlist_id', 1);
+    validateArray(args.track_uris, 'track_uris', 1);
+    const result = await this.playlistController.addTracksWithDedup(
+      args.playlist_id,
+      args.track_uris
+    );
+    return { content: [{ type: 'text', text: JSON.stringify(result) }] };
+  }
+
+  async handleGetPlaylist(args) {
+    validateRequired(args, ['playlist_id']);
+    validateString(args.playlist_id, 'playlist_id', 1);
+    const playlist = await this.spotifyController.getPlaylist(args.playlist_id);
+    return { content: [{ type: 'text', text: JSON.stringify(playlist) }] };
+  }
+
+  async handleGetUserPlaylists(args) {
+    const limit = args?.limit || 20;
+    validateNumber(limit, 'limit', 1, 50, true);
+    const playlists = await this.spotifyController.getUserPlaylists(limit);
+    return { content: [{ type: 'text', text: JSON.stringify({ playlists }) }] };
+  }
+
+  async handleGetRecommendations(args) {
+    const options = {
+      seed_tracks: args?.seed_tracks || [],
+      seed_artists: args?.seed_artists || [],
+      seed_genres: args?.seed_genres || [],
+      limit: args?.limit || 20
+    };
+    
+    if (args?.target_acousticness !== undefined) options.target_acousticness = args.target_acousticness;
+    if (args?.target_danceability !== undefined) options.target_danceability = args.target_danceability;
+    if (args?.target_energy !== undefined) options.target_energy = args.target_energy;
+    if (args?.target_valence !== undefined) options.target_valence = args.target_valence;
+    if (args?.target_tempo !== undefined) options.target_tempo = args.target_tempo;
+    
+    const recommendations = await this.spotifyController.getRecommendations(options);
+    return { content: [{ type: 'text', text: JSON.stringify(recommendations) }] };
+  }
+
+  async handleGetAudioFeatures(args) {
+    validateRequired(args, ['track_ids']);
+    validateArray(args.track_ids, 'track_ids', 1);
+    const features = await this.playlistController.getAudioFeaturesWithCache(args.track_ids);
+    return { content: [{ type: 'text', text: JSON.stringify({ features }) }] };
+  }
+
+  async handleAnalyzePlaylist(args) {
+    validateRequired(args, ['playlist_id']);
+    validateString(args.playlist_id, 'playlist_id', 1);
+    const analysis = await this.playlistController.analyzePlaylist(args.playlist_id);
+    return { content: [{ type: 'text', text: JSON.stringify(analysis) }] };
+  }
+
+  async handleGetRefreshToken(args) {
+    validateRequired(args, ['client_id', 'client_secret']);
+    validateString(args.client_id, 'client_id', 1);
+    validateString(args.client_secret, 'client_secret', 1);
+
+    const REDIRECT_URI = 'http://localhost:8888/callback';
+    
+    const spotifyApi = new SpotifyWebApi({
+      clientId: args.client_id,
+      clientSecret: args.client_secret,
+      redirectUri: REDIRECT_URI,
+    });
+
+    const scopes = [
+      'user-read-playback-state',
+      'user-modify-playback-state',
+      'user-read-currently-playing',
+      'playlist-read-private',
+      'playlist-read-collaborative',
+      'playlist-modify-public',
+      'playlist-modify-private',
+      'user-library-read',
+      'user-top-read',
+    ];
+
+    const authorizeURL = spotifyApi.createAuthorizeURL(scopes);
+    
+    const result = {
+      step: 1,
+      message: 'Authorization required. Please visit the URL below in your browser, authorize the app, and you will be redirected to a URL with a code parameter.',
+      authorization_url: authorizeURL,
+      instructions: [
+        '1. Visit the authorization_url above in your web browser',
+        '2. Log in to Spotify and authorize the application',
+        '3. You will be redirected to http://localhost:8888/callback?code=...',
+        '4. Copy the entire URL you were redirected to',
+        '5. Call this tool again with: client_id, client_secret, and the authorization_code from the URL'
+      ],
+      next_step: 'Once you have the authorization code from the redirect URL, call this tool again with the "authorization_code" parameter included'
+    };
+
+    // If authorization_code is provided, exchange it for tokens
+    if (args.authorization_code) {
+      try {
+        const data = await spotifyApi.authorizationCodeGrant(args.authorization_code);
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify({
+              success: true,
+              refresh_token: data.body.refresh_token,
+              access_token: data.body.access_token,
+              expires_in: data.body.expires_in,
+              message: 'Success! Save the refresh_token to your .env file or bundle configuration as SPOTIFY_REFRESH_TOKEN',
+              instructions: [
+                '1. Copy the refresh_token value above',
+                '2. Add it to your .env file as: SPOTIFY_REFRESH_TOKEN=<your_token>',
+                '3. You can now use all Spotify tools'
+              ]
+            }, null, 2)
+          }]
+        };
+      } catch (error) {
+        throw new InvalidArgumentError(`Failed to exchange authorization code: ${error.message}. Make sure the code is valid and hasn\'t been used already.`);
+      }
+    }
+
+    return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+  }
+
   async run() {
-    const transport = new StdioServerTransport();
-    await this.server.connect(transport);
-    console.error("Spotify MCP server running on stdio");
+    try {
+      await this.spotifyController.initialize();
+      logger.info('server_started', { name: 'spotify-mcpb', version: '0.2.0' });
+      
+      const transport = new StdioServerTransport();
+      await this.server.connect(transport);
+    } catch (error) {
+      logger.error('server_failed_to_start', { error: error.message });
+      process.exit(1);
+    }
   }
 }
 
-const server = new SpotifyServer();
-server.run().catch((error) => {
-  console.error("Server error:", error);
-  process.exit(1);
-});
+const server = new SpotifyMcpServer();
+server.run();

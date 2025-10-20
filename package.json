@@ -1,12 +1,46 @@
 {
-  "name": "spotify",
-  "version": "0.0.1",
-  "description": "Control Spotify via AppleScript",
+  "name": "spotify-mcpb",
+  "version": "0.2.1",
+  "description": "Control Spotify and create playlists via Web API - Cross-platform MCP Bundle",
   "type": "module",
   "scripts": {
-    "start": "node server/index.js"
+    "start": "node server/index.js",
+    "dev": "node --env-file=.env server/index.js"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^0.6.0"
-  }
+    "@modelcontextprotocol/sdk": "^1.20.1",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "p-limit": "^7.2.0",
+    "quick-lru": "^7.3.0",
+    "spotify-web-api-node": "^5.0.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "spotify",
+    "playlist",
+    "music",
+    "mcp",
+    "mcpb",
+    "web-api",
+    "windows",
+    "cross-platform",
+    "claude",
+    "ai",
+    "model-context-protocol"
+  ],
+  "author": {
+    "name": "Fabio C"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fabioc-aloha/spotify-mcpb.git"
+  },
+  "bugs": {
+    "url": "https://github.com/fabioc-aloha/spotify-mcpb/issues"
+  },
+  "homepage": "https://github.com/fabioc-aloha/spotify-mcpb#readme",
+  "license": "MIT"
 }
