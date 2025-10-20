@@ -6,7 +6,7 @@
   "description": "Control Spotify and create playlists using the Spotify Web API",
   "long_description": "This MCPB extension provides comprehensive Spotify control and playlist management capabilities. Use it to play music, control playback, search for tracks, create and curate playlists, add tracks, analyze playlists, and more. Works cross-platform (Windows, macOS, Linux) using the Spotify Web API. Perfect for building custom music workflows and playlist curation with AI assistance.",
   "author": {
-    "name": "Fabio C",
+    "name": "Fabio Correa",
     "url": "https://github.com/fabioc-aloha"
   },
   "repository": {

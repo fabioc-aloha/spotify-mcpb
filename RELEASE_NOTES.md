@@ -229,10 +229,10 @@ See [CHANGELOG.md](https://github.com/fabioc-aloha/spotify-mcpb/blob/main/CHANGE
 
 ---
 
-## 👏 Credits
+## Credits
 
 - **Original Project**: [spotify-dxt](https://github.com/kenneth-lien/spotify-dxt) by Kenneth Lien
-- **Windows Port & Features**: Fabio C.
+- **Windows Port & Features**: Fabio Correa
 - **MCPB Specification**: [Anthropic](https://github.com/anthropics/mcpb)
 - **MCP Protocol**: [Model Context Protocol](https://modelcontextprotocol.io/)
 

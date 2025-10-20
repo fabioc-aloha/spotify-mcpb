@@ -745,7 +745,7 @@ cd test && node server/index.js
 ## Credits
 
 - **Original Project**: spotify-dxt by Kenneth Lien (macOS-only version)
-- **Cross-Platform Port & Features**: Fabio C.
+- **Cross-Platform Port & Features**: Fabio Correa
 - **MCPB Specification**: Anthropic
 - **MCP Protocol**: Model Context Protocol
 - **Spotify Web API**: Spotify

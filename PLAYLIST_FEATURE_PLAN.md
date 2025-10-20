@@ -331,7 +331,7 @@ Add to Claude Desktop config:
 ## Credits
 
 **Original Project**: spotify-dxt by Kenneth Lien (macOS AppleScript version)
-**Windows Port & Playlist Features**: Fabio C.
+**Windows Port & Playlist Features**: Fabio Correa
 **Porting Date**: October 2025
 **MCPB Version**: 0.2
 **Node.js Version**: 18.0.0+

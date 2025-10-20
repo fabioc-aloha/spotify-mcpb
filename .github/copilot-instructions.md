@@ -328,4 +328,4 @@ For specific tasks:
 
 **Last Updated**: October 20, 2025  
 **Project Version**: 0.2.1  
-**Maintainer**: Fabio C.
+**Maintainer**: Fabio Correa
