@@ -29,31 +29,46 @@ export class SpotifyWebController {
     const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
     const refreshToken = process.env.SPOTIFY_REFRESH_TOKEN;
 
-    if (!clientId || !clientSecret || !refreshToken) {
-      throw new AuthError(
-        'Missing Spotify credentials. Please configure SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET, and SPOTIFY_REFRESH_TOKEN.',
-        {
-          hasClientId: !!clientId,
-          hasClientSecret: !!clientSecret,
-          hasRefreshToken: !!refreshToken,
-        }
-      );
+    // Allow server to start without refresh token (needed for getting refresh token)
+    // but require client_id and client_secret for basic initialization
+    if (!clientId || !clientSecret) {
+      logger.warn('spotify_credentials_incomplete', {
+        hasClientId: !!clientId,
+        hasClientSecret: !!clientSecret,
+        hasRefreshToken: !!refreshToken,
+        message: 'Server started with incomplete credentials. Only refresh token generation will be available.'
+      });
+      this.initialized = true; // Mark as initialized to prevent re-initialization attempts
+      return;
     }
 
     this.spotifyApi = new SpotifyWebApi({
       clientId,
       clientSecret,
-      refreshToken,
+      refreshToken: refreshToken || undefined, // Allow undefined refresh token
     });
 
-    // Get initial access token
-    await this.refreshAccessToken();
-
-    // Get user ID
-    await this.fetchUserId();
-
-    this.initialized = true;
-    logger.info('spotify_controller_initialized', { userId: this.userId });
+    // Only get initial access token if refresh token is available
+    if (refreshToken) {
+      try {
+        await this.refreshAccessToken();
+        
+        // Get user ID
+        await this.fetchUserId();
+        
+        this.initialized = true;
+        logger.info('spotify_controller_initialized', { userId: this.userId });
+      } catch (error) {
+        logger.error('spotify_initialization_failed', { error: error.message });
+        throw new AuthError('Failed to initialize Spotify API. Please check your credentials.', { error: error.message });
+      }
+    } else {
+      // Mark as initialized but not fully configured
+      this.initialized = true;
+      logger.warn('spotify_controller_partially_initialized', { 
+        message: 'No refresh token provided. Only token generation tools will work.' 
+      });
+    }
   }
 
   /**
@@ -81,9 +96,28 @@ export class SpotifyWebController {
   }
 
   /**
+   * Check if controller is fully initialized with valid credentials
+   */
+  isFullyInitialized() {
+    return this.initialized && this.spotifyApi && process.env.SPOTIFY_REFRESH_TOKEN;
+  }
+
+  /**
+   * Ensure controller is ready for API operations
+   */
+  ensureReady() {
+    if (!this.isFullyInitialized()) {
+      throw new AuthError(
+        'Spotify API not fully configured. Please set SPOTIFY_REFRESH_TOKEN or use spotify_get_refresh_token tool to obtain one.'
+      );
+    }
+  }
+
+  /**
    * Ensure access token is valid, refresh if needed
    */
   async ensureValidToken() {
+    this.ensureReady();
     if (!this.tokenExpiry || Date.now() >= this.tokenExpiry - TOKEN_EXPIRY_BUFFER) {
       await this.refreshAccessToken();
     }

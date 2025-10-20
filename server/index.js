@@ -207,11 +207,13 @@ class SpotifyMcpServer {
   }
 
   async handlePlay() {
+    this.spotifyController.ensureReady();
     await this.spotifyController.play();
     return { content: [{ type: 'text', text: JSON.stringify({ status: 'playing' }) }] };
   }
 
   async handlePause() {
+    this.spotifyController.ensureReady();
     await this.spotifyController.pause();
     return { content: [{ type: 'text', text: JSON.stringify({ status: 'paused' }) }] };
   }
@@ -234,6 +236,7 @@ class SpotifyMcpServer {
   }
 
   async handleGetCurrentTrack() {
+    this.spotifyController.ensureReady();
     const track = await this.spotifyController.getCurrentTrack();
     return { content: [{ type: 'text', text: JSON.stringify(track) }] };
   }
@@ -324,12 +327,14 @@ class SpotifyMcpServer {
   }
 
   async handleGetRefreshToken(args) {
+    // This tool works independently - no need for main controller initialization
     validateRequired(args, ['client_id', 'client_secret']);
     validateString(args.client_id, 'client_id', 1);
     validateString(args.client_secret, 'client_secret', 1);
 
     const REDIRECT_URI = 'http://localhost:8888/callback';
     
+    // Create a separate Spotify API instance for token generation
     const spotifyApi = new SpotifyWebApi({
       clientId: args.client_id,
       clientSecret: args.client_secret,
@@ -386,7 +391,16 @@ class SpotifyMcpServer {
           }]
         };
       } catch (error) {
-        throw new InvalidArgumentError(`Failed to exchange authorization code: ${error.message}. Make sure the code is valid and hasn\'t been used already.`);
+        const errorMessage = error.message || 'Unknown error';
+        let helpText = 'Make sure the authorization code is valid and hasn\'t been used already.';
+        
+        if (errorMessage.includes('invalid_grant')) {
+          helpText = 'The authorization code has expired or been used already. Please get a new code by visiting the authorization URL again.';
+        } else if (errorMessage.includes('invalid_client')) {
+          helpText = 'Invalid client credentials. Please check your Client ID and Client Secret.';
+        }
+        
+        throw new InvalidArgumentError(`Failed to exchange authorization code: ${errorMessage}. ${helpText}`);
       }
     }
 
@@ -396,7 +410,7 @@ class SpotifyMcpServer {
   async run() {
     try {
       await this.spotifyController.initialize();
-      logger.info('server_started', { name: 'spotify-mcpb', version: '0.2.0' });
+      logger.info('server_started', { name: 'spotify-mcpb', version: '0.2.1' });
       
       const transport = new StdioServerTransport();
       await this.server.connect(transport);
