@@ -87,7 +87,7 @@ Claude: Controls playback instantly
 ### For Users (Easiest)
 
 1. **Download** the latest bundle from [releases](https://github.com/fabioc-aloha/spotify-mcpb/releases/latest)
-2. **Double-click** `spotify-mcpb-0.2.1.mcpb` to install in Claude Desktop
+2. **Double-click** `spotify-mcpb-0.2.2.mcpb` to install in Claude Desktop
 3. **Get credentials** from [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)
 4. **Setup token**: Ask Claude _"Help me get a Spotify refresh token"_
 5. **Start using**: _"What's playing on Spotify?"_ 🎵
@@ -111,7 +111,7 @@ npm start
 
 # Build bundle (optional)
 npm install -g @anthropic-ai/mcpb
-mcpb pack . spotify-mcpb-0.2.1.mcpb
+mcpb pack . spotify-mcpb-0.2.2.mcpb
 ```
 
 See [BUNDLE.md](BUNDLE.md) for complete build instructions.

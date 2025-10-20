@@ -106,7 +106,7 @@ async createPlaylist(name, options = {}) {
 
 **After Fix**:
 ```javascript
-// FIXED CODE (v0.2.1)
+// FIXED CODE (v0.2.2)
 async createPlaylist(name, options = {}) {
   const { description = '', isPublic = false } = options;
   return this.executeWithRetry(() =>

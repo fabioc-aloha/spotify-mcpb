@@ -26,7 +26,7 @@ A clear and concise description of what actually happened.
 If applicable, add screenshots to help explain your problem.
 
 ## Environment
-**Spotify MCPB Version**: [e.g. 0.2.1]
+**Spotify MCPB Version**: [e.g. 0.2.2]
 **Operating System**: [e.g. Windows 11, macOS 14.0, Ubuntu 22.04]
 **Node.js Version**: [e.g. 18.17.0] (if running from source)
 **Claude Desktop Version**: [e.g. 1.2.3] (if using bundle)

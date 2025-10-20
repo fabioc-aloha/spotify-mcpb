@@ -52,12 +52,12 @@
     <!-- MCPB badge -->
     <rect x="290" y="0" width="120" height="35" rx="17.5" fill="#191414" opacity="0.8"/>
     <text x="350" y="23" font-family="Arial, sans-serif" font-size="16" fill="#ffffff" text-anchor="middle">
-      MCPB v0.2.1
+      MCPB
     </text>
     
     <!-- Claude badge -->
-    <rect x="425" y="0" width="140" height="35" rx="17.5" fill="#191414" opacity="0.8"/>
-    <text x="495" y="23" font-family="Arial, sans-serif" font-size="16" fill="#ffffff" text-anchor="middle">
+    <rect x="425" y="0" width="160" height="35" rx="17.5" fill="#191414" opacity="0.8"/>
+    <text x="505" y="23" font-family="Arial, sans-serif" font-size="16" fill="#ffffff" text-anchor="middle">
       Claude Desktop
     </text>
   </g>

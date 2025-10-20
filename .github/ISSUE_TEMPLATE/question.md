@@ -22,7 +22,7 @@ List any steps you've already taken or documentation you've consulted:
 
 ## Environment
 **Setup Information:**
-- **Spotify MCPB Version**: [e.g. 0.2.1]
+- **Spotify MCPB Version**: [e.g. 0.2.2]
 - **Operating System**: [e.g. Windows 11, macOS 14.0, Ubuntu 22.04]
 - **Installation Method**: [Bundle/Source/Other]
 - **Spotify Account Type**: [Premium/Free]

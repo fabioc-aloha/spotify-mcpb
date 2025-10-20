@@ -30,7 +30,7 @@ Think of it like Chrome extensions (`.crx`) or VS Code extensions (`.vsix`) - us
 
 ### Current Bundle Information
 
-**Bundle File**: `spotify-mcpb-0.2.1.mcpb`
+**Bundle File**: `spotify-mcpb-0.2.2.mcpb`
 **Size**: ~2 MB (compressed), ~6 MB (unpacked)
 **Files**: 1,144+ files
 **Tools**: 16 MCP tools for Spotify control
@@ -55,7 +55,7 @@ The directory has been renamed to `spotify-mcpb` to match the project name, so `
 mcpb pack
 
 # Or specify version explicitly for versioned releases
-mcpb pack . spotify-mcpb-0.2.1.mcpb
+mcpb pack . spotify-mcpb-0.2.2.mcpb
 ```
 
 ### How MCPB Pack Works
@@ -68,7 +68,7 @@ The `mcpb pack` command uses the **directory name** (not the manifest name) for 
 | --------------------------------------- | --------------------------- | --------------------- |
 | `mcpb pack`                           | `{directory-name}.mcpb`   | Directory name        |
 | `mcpb pack . myapp.mcpb`              | `myapp.mcpb`              | Your specification ✅ |
-| `mcpb pack . spotify-mcpb-0.2.1.mcpb` | `spotify-mcpb-0.2.1.mcpb` | Your specification ✅ |
+| `mcpb pack . spotify-mcpb-0.2.2.mcpb` | `spotify-mcpb-0.2.2.mcpb` | Your specification ✅ |
 
 **Note**: The manifest `name` field controls the internal bundle name, but the filename is controlled by the `mcpb pack` command's output parameter.
 
@@ -123,7 +123,7 @@ Follow the prompts:
 
 - **Bundle name**: `spotify-mcpb`
 - **Description**: `Control Spotify and create custom playlists using the Spotify Web API`
-- **Version**: `0.2.1`
+- **Version**: `0.2.2`
 - **Entry point**: `node server/index.js`
 
 ### Step 2: Prepare Dependencies
@@ -165,7 +165,7 @@ The icon will be displayed in Claude Desktop and other MCPB-compatible apps.
 
 ```bash
 # Create the .mcpb bundle file with explicit version
-mcpb pack . spotify-mcpb-0.2.1.mcpb
+mcpb pack . spotify-mcpb-0.2.2.mcpb
 
 # Or let it auto-generate the name (uses directory name)
 
@@ -184,7 +184,7 @@ If you need more control:
 
 ```bash
 # Create a zip archive with all necessary files
-zip -r spotify-mcpb-0.2.1.mcpb \
+zip -r spotify-mcpb-0.2.2.mcpb \
   manifest.json \
   server/ \
   node_modules/ \
@@ -202,17 +202,17 @@ zip -r spotify-mcpb-0.2.1.mcpb \
   -x "test/*"
 
 # Rename to .mcpb
-mv spotify-mcpb-0.2.1.zip spotify-mcpb-0.2.1.mcpb
+mv spotify-mcpb-0.2.2.zip spotify-mcpb-0.2.2.mcpb
 ```
 
 On Windows (PowerShell):
 
 ```powershell
 # Compress to zip
-Compress-Archive -Path manifest.json,server,node_modules,package.json,package-lock.json,.env.example,README.md,SETUP.md,REFRESH_TOKEN_GUIDE.md,icon.png -DestinationPath spotify-mcpb-0.2.1.zip
+Compress-Archive -Path manifest.json,server,node_modules,package.json,package-lock.json,.env.example,README.md,SETUP.md,REFRESH_TOKEN_GUIDE.md,icon.png -DestinationPath spotify-mcpb-0.2.2.zip
 
 # Rename to .mcpb
-Rename-Item spotify-mcpb-0.2.1.zip spotify-mcpb-0.2.1.mcpb
+Rename-Item spotify-mcpb-0.2.2.zip spotify-mcpb-0.2.2.mcpb
 ```
 
 ### What Gets Included in the Bundle?
@@ -247,7 +247,7 @@ Rename-Item spotify-mcpb-0.2.1.zip spotify-mcpb-0.2.1.mcpb
 #### Check Bundle Size
 
 ```bash
-ls -lh spotify-mcpb-0.2.1.mcpb
+ls -lh spotify-mcpb-0.2.2.mcpb
 # Target: < 10MB for fast downloads
 ```
 
@@ -281,7 +281,7 @@ Before distributing, test the bundle:
 ```bash
 # Extract to a test directory
 mkdir test-bundle
-unzip spotify-mcpb-0.2.1.mcpb -d test-bundle
+unzip spotify-mcpb-0.2.2.mcpb -d test-bundle
 cd test-bundle
 
 # Set credentials
@@ -293,7 +293,7 @@ export SPOTIFY_REFRESH_TOKEN="your_refresh_token"
 node server/index.js
 
 # Should output:
-# {"timestamp":"...","level":"info","event":"server_started","name":"spotify-mcpb","version":"0.2.1"}
+# {"timestamp":"...","level":"info","event":"server_started","name":"spotify-mcpb","version":"0.2.2"}
 ```
 
 ### Test with Claude Desktop
@@ -324,7 +324,7 @@ node server/index.js
 
 #### Option 1: Claude Desktop (Recommended)
 
-1. **Download** `spotify-mcpb-0.2.1.mcpb`
+1. **Download** `spotify-mcpb-0.2.2.mcpb`
 2. **Double-click** the file
 3. Claude Desktop will open with an installation dialog
 4. **Enter your Spotify API credentials**:
@@ -339,7 +339,7 @@ node server/index.js
 1. Extract the bundle:
 
    ```bash
-   unzip spotify-mcpb-0.2.1.mcpb -d spotify-mcpb
+   unzip spotify-mcpb-0.2.2.mcpb -d spotify-mcpb
    cd spotify-mcpb
    ```
 2. Create `.env` file:
@@ -386,14 +386,14 @@ See `SETUP.md` and `REFRESH_TOKEN_GUIDE.md` in the bundle for detailed instructi
 1. Create a release on GitHub:
 
    ```bash
-   git tag v0.2.1
-   git push origin v0.2.1
+   git tag v0.2.2
+   git push origin v0.2.2
    ```
 2. Upload the `.mcpb` file to the release
 3. Users can download and install:
 
    ```
-   Download: spotify-mcpb-0.2.1.mcpb
+   Download: spotify-mcpb-0.2.2.mcpb
    Install: Double-click the file (opens in Claude Desktop)
    ```
 
@@ -415,7 +415,7 @@ Users can verify integrity:
 
 ```bash
 # SHA-256 checksum
-shasum -a 256 spotify-mcpb-0.2.1.mcpb
+shasum -a 256 spotify-mcpb-0.2.2.mcpb
 ```
 
 ---
@@ -729,11 +729,11 @@ If you encounter issues:
 npm install -g @anthropic-ai/mcpb          # Install CLI
 mcpb validate manifest.json                 # Validate manifest
 npm ci --production                         # Install dependencies
-mcpb pack . spotify-mcpb-0.2.1.mcpb        # Create bundle
-# Result: spotify-mcpb-0.2.1.mcpb
+mcpb pack . spotify-mcpb-0.2.2.mcpb        # Create bundle
+# Result: spotify-mcpb-0.2.2.mcpb
 
 # Test locally
-mkdir test && unzip spotify-mcpb-0.2.1.mcpb -d test
+mkdir test && unzip spotify-mcpb-0.2.2.mcpb -d test
 cd test && node server/index.js
 
 # Distribute
@@ -760,4 +760,4 @@ MIT License - See LICENSE.md in bundle
 
 **Your bundle is ready for distribution! 🎉**
 
-Share `spotify-mcpb-0.2.1.mcpb` with users - they can install with one click!
+Share `spotify-mcpb-0.2.2.mcpb` with users - they can install with one click!

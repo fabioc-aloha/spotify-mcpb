@@ -3,11 +3,11 @@
 ## Project Overview
 
 **Project Name**: Spotify MCPB  
-**Version**: 0.2.1  
+**Version**: 0.2.2  
 **Type**: MCPB Bundle (Model Context Protocol Bundle) for Claude Desktop  
 **Purpose**: Cross-platform Spotify control and playlist management using Spotify Web API
 
-**Important**: This directory is named `spotify-mcpb` matching the project name. The project was rebranded from `spotify-dxt` to `spotify-mcpb`. See [REBRANDING_SUMMARY.md](../REBRANDING_SUMMARY.md) for details.
+**Important**: This directory is named `spotify-mcpb` matching the project name. The project was rebranded from `spotify-dxt` to `spotify-mcpb`.
 
 ---
 
@@ -19,6 +19,13 @@
 - ❌ **Do NOT call this project "spotify-dxt"** (that's the original macOS project by Kenneth Lien)
 - ✅ **Credit Original**: Always acknowledge [Kenneth Lien's spotify-dxt](https://github.com/kenneth-lien/spotify-dxt) as the original inspiration
 
+### Authentication & Setup (Critical Learnings v0.2.2)
+- ✅ **Refresh Token is Optional**: manifest.json has `required: false` for refresh_token
+- ✅ **Graceful Degradation**: Server starts without refresh token, shows warnings
+- ✅ **Interactive Setup**: Users get refresh token via `spotify_get_refresh_token` tool after installation
+- ✅ **Use 127.0.0.1**: Always use 127.0.0.1 instead of localhost for OAuth redirects
+- ⚠️ **Authentication Checks**: ALL handler methods MUST call `ensureReady()` before operations
+
 ### Bundle Creation
 ✅ **Directory renamed**: The directory is now named `spotify-mcpb`, so `mcpb pack` creates correctly named bundles!
 
@@ -27,7 +34,7 @@
 mcpb pack
 
 # ✅ ALSO CORRECT - Specify version explicitly
-mcpb pack . spotify-mcpb-0.2.1.mcpb
+mcpb pack . spotify-mcpb-0.2.2.mcpb
 ```
 
 See [BUNDLE.md](../BUNDLE.md) for details.
@@ -37,23 +44,21 @@ See [BUNDLE.md](../BUNDLE.md) for details.
 ## 📚 Essential Documentation Files
 
 ### Quick Reference
-- **[README.md](../README.md)** - Project overview and quick start (3.7 KB)
-- **[SETUP.md](../SETUP.md)** - Spotify API credential setup guide (5.8 KB)
-- **[REFRESH_TOKEN_GUIDE.md](../REFRESH_TOKEN_GUIDE.md)** - Interactive OAuth flow walkthrough (12.5 KB)
+- **[README.md](../README.md)** - Project overview and quick start
+- **[SETUP.md](../SETUP.md)** - Spotify API credential setup guide
+- **[LOCAL_TESTING.md](../LOCAL_TESTING.md)** - Local development and testing guide
 
 ### Development
-- **[BUNDLE.md](../BUNDLE.md)** - Bundle creation, installation & distribution (22 KB)
-- **[PLAYLIST_FEATURE_PLAN.md](../PLAYLIST_FEATURE_PLAN.md)** - Implementation details (9.5 KB)
-- **[FEATURE_REFRESH_TOKEN.md](../FEATURE_REFRESH_TOKEN.md)** - New refresh token feature docs (11.4 KB)
+- **[BUNDLE.md](../BUNDLE.md)** - Bundle creation, installation & distribution
+- **[CONTRIBUTING.md](../CONTRIBUTING.md)** - Contribution guidelines
 
 ### Distribution
-- **[RELEASE_NOTES.md](../RELEASE_NOTES.md)** - GitHub release template (7.6 KB)
-- **[CHANGELOG.md](../CHANGELOG.md)** - Version history (18 KB)
+- **[CHANGELOG.md](../CHANGELOG.md)** - Version history
 
 ### Administrative
-- **[REBRANDING_SUMMARY.md](../REBRANDING_SUMMARY.md)** - Project rename documentation (7.2 KB)
-- **[DOCUMENTATION_INDEX.md](../DOCUMENTATION_INDEX.md)** - Complete documentation index (updated)
-- **[LICENSE.md](../LICENSE.md)** - MIT License (1.0 KB)
+- **[LICENSE.md](../LICENSE.md)** - MIT License
+- **[SECURITY.md](../SECURITY.md)** - Security policy
+- **[CODE_OF_CONDUCT.md](../CODE_OF_CONDUCT.md)** - Code of conduct
 
 ---
 
@@ -80,7 +85,7 @@ spotify-mcpb/
 ## 🎯 Key Features
 
 ### 16 MCP Tools Available
-0. `spotify_get_refresh_token` - Interactive OAuth flow (NEW in 0.2.0)
+0. `spotify_get_refresh_token` - Interactive OAuth flow (NEW in 0.2.0, FIXED in 0.2.2)
 1. `spotify_play` - Resume playback
 2. `spotify_pause` - Pause playback
 3. `spotify_next_track` - Skip to next track
@@ -122,7 +127,19 @@ node server/index.js
 
 # Or use npm script
 npm start
+
+# Generate refresh token interactively (NEW in v0.2.2)
+npm run get-token
+
+# Generate refresh token manually (fallback method)
+npm run manual-token
 ```
+
+### Local Development Tools (NEW v0.2.2)
+- **`get-refresh-token.js`** - Interactive OAuth server on 127.0.0.1:8888
+- **`manual-token.js`** - Fallback token generation script
+- **Both tools handle the full OAuth 2.0 flow automatically**
+- **Use 127.0.0.1 instead of localhost for better compatibility**
 
 ### Creating Bundle
 ```bash
@@ -133,20 +150,22 @@ npm install -g @anthropic-ai/mcpb
 mcpb validate manifest.json
 
 # Create bundle with explicit filename
-mcpb pack . spotify-mcpb-0.2.0.mcpb
+mcpb pack . spotify-mcpb-0.2.2.mcpb
 
 # Verify bundle
-ls -lh spotify-mcpb-0.2.0.mcpb
+ls -lh spotify-mcpb-0.2.2.mcpb
 ```
 
 ### Making Code Changes
 
 #### Server Code (`server/index.js`)
 - All 16 tool handlers are in this file
-- Uses MCP SDK v0.6.0
+- Uses MCP SDK v1.20.1 (updated from v0.6.0 in v0.2.2)
 - Follow existing patterns for new tools
 - Always validate inputs using `validation.js`
 - Handle errors using `error.js`
+- **CRITICAL**: All handler methods MUST call `ensureReady()` before operations
+- **Authentication Flow**: Server starts without refresh token, users get it via interactive tool
 
 #### Dependencies
 - Keep `package.json` in sync with actual usage
@@ -188,7 +207,7 @@ ls -lh spotify-mcpb-0.2.0.mcpb
 
 When updating docs, ensure consistency across:
 - Tool counts (currently 16 tools)
-- Version numbers (currently 0.2.0)
+- Version numbers (currently 0.2.2)
 - Repository URLs (github.com/fabioc-aloha/spotify-mcpb)
 - Project name (Spotify MCPB, not spotify-dxt)
 
@@ -197,12 +216,13 @@ When updating docs, ensure consistency across:
 1. **Update Version**:
    - `package.json` - version field
    - `manifest.json` - version field
+   - `server/index.js` - version field
    - `CHANGELOG.md` - add new version section
 
 2. **Update Documentation**:
-   - `RELEASE_NOTES.md` - update for new version
-   - `README.md` - update if needed
-   - `BUNDLE-SUMMARY.md` - update statistics
+   - Update all version references across documentation
+   - Update bundle filename references
+   - Update download links and examples
 
 3. **Create Bundle**:
    ```bash
@@ -213,6 +233,7 @@ When updating docs, ensure consistency across:
    - Extract and test locally
    - Verify all tools work
    - Check documentation is complete
+   - Test authentication flow without refresh token
 
 5. **Tag and Release**:
    ```bash
@@ -222,12 +243,45 @@ When updating docs, ensure consistency across:
 
 ---
 
+## 🔧 Critical Fixes in v0.2.2
+
+### Authentication Flow Issues (RESOLVED)
+- **Problem**: manifest.json required refresh_token, blocking installation
+- **Solution**: Set `required: false, default: ""` in manifest.json
+- **Impact**: Users can now install without upfront token, get it via Claude
+
+### Missing Authentication Checks (RESOLVED) 
+- **Problem**: 8 handler methods lacked `ensureReady()` calls
+- **Affected Methods**: 
+  - `handleGetRefreshToken`
+  - `handleSearchTracks` 
+  - `handleCreatePlaylist`
+  - `handleAddTracksToPlaylist`
+  - `handleGetPlaylist`
+  - `handleGetUserPlaylists`
+  - `handleGetRecommendations`
+  - `handleAnalyzePlaylist`
+- **Solution**: Added proper authentication validation to all handlers
+
+### Network Compatibility (IMPROVED)
+- **Change**: Updated all redirect URIs from localhost to 127.0.0.1
+- **Reason**: Better cross-platform compatibility, especially Windows
+- **Files Updated**: server/index.js, get-refresh-token.js, manual-token.js
+
+### Local Development Tools (NEW)
+- **Added**: `get-refresh-token.js` - Interactive OAuth server
+- **Added**: `manual-token.js` - Fallback token generation
+- **Added**: npm scripts: `get-token`, `manual-token`
+- **Benefit**: No more manual OAuth flow, automated token exchange
+
+---
+
 ## 🐛 Troubleshooting
 
 ### Common Issues
 
 1. **Bundle has wrong name**
-   - Solution: Use `mcpb pack . spotify-mcpb-0.2.1.mcpb`
+   - Solution: Use `mcpb pack . spotify-mcpb-0.2.2.mcpb`
    - See [BUNDLE.md](../BUNDLE.md)
 
 2. **Manifest validation fails**
@@ -293,7 +347,7 @@ When updating docs, ensure consistency across:
 
 - **Total Tools**: 16
 - **Lines of Code**: ~16,000+ (with dependencies)
-- **Bundle Size**: 2.3 MB compressed, 8.0 MB unpacked
+- **Bundle Size**: 3.0 MB compressed, 10.2 MB unpacked
 - **Documentation**: 64.3 KB across 10 files
 - **Dependencies**: 60 packages (5 direct)
 
@@ -315,17 +369,17 @@ When updating docs, ensure consistency across:
 
 If you're new to this project, read in this order:
 1. [README.md](../README.md) - Start here
-2. [SETUP.md](../SETUP.md) - Get credentials
+2. [SETUP.md](../SETUP.md) - Get credentials  
 3. [BUNDLE.md](../BUNDLE.md) - Understand bundle creation
-4. [PLAYLIST_FEATURE_PLAN.md](../PLAYLIST_FEATURE_PLAN.md) - Deep dive into implementation
+4. [LOCAL_TESTING.md](../LOCAL_TESTING.md) - Local development setup
 
 For specific tasks:
 - **Adding features**: See "Adding a New Tool" section above
 - **Creating releases**: See "Creating a Release" section above
-- **Troubleshooting**: See [DOCUMENTATION_INDEX.md](../DOCUMENTATION_INDEX.md)
+- **Contributing**: See [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ---
 
 **Last Updated**: October 20, 2025  
-**Project Version**: 0.2.1  
+**Project Version**: 0.2.2  
 **Maintainer**: Fabio Correa

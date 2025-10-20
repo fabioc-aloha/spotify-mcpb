@@ -100,7 +100,7 @@ npm start
 
 You should see:
 ```json
-{"timestamp":"...","level":"info","event":"server_started","name":"spotify-mcpb","version":"0.2.1"}
+{"timestamp":"...","level":"info","event":"server_started","name":"spotify-mcpb","version":"0.2.2"}
 ```
 
 ---

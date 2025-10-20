@@ -8,7 +8,7 @@ Complete guide to getting your Spotify MCPB bundle up and running.
 
 ### Step 1: Install the Bundle
 
-1. Download `spotify-mcpb-0.2.0.mcpb` from [releases](https://github.com/fabioc-aloha/spotify-mcpb/releases)
+1. Download `spotify-mcpb-0.2.2.mcpb` from [releases](https://github.com/fabioc-aloha/spotify-mcpb/releases)
 2. Double-click the `.mcpb` file to install in Claude Desktop
 3. Claude Desktop will show a configuration dialog
 
@@ -22,7 +22,7 @@ Before you can fill in the configuration dialog, you need to create a Spotify De
 4. Fill in the form:
    - **App name**: "My Spotify MCP" (or any name you like)
    - **App description**: "MCP integration for Spotify"
-   - **Redirect URIs**: `http://localhost:8888/callback`
+   - **Redirect URIs**: `http://127.0.0.1:8888/callback`
    - **Which API/SDKs are you planning to use**: Web API
 5. Accept the terms and click **Create**
 6. On your app's page, click **"Settings"**
@@ -136,7 +136,7 @@ npm start
 
 The server should start and log:
 ```json
-{"timestamp":"...","level":"info","event":"server_started","name":"spotify-mcpb","version":"0.2.0"}
+{"timestamp":"...","level":"info","event":"server_started","name":"spotify-mcpb","version":"0.2.2"}
 ```
 
 ### Test with Claude:

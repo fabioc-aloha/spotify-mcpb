@@ -2,7 +2,7 @@
   "manifest_version": "0.2",
   "name": "spotify-mcpb",
   "display_name": "Spotify Playlist Creator",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Control Spotify and create playlists using the Spotify Web API",
   "long_description": "This MCPB extension provides comprehensive Spotify control and playlist management capabilities. Use it to play music, control playback, search for tracks, create and curate playlists, add tracks, analyze playlists, and more. Works cross-platform (Windows, macOS, Linux) using the Spotify Web API. Perfect for building custom music workflows and playlist curation with AI assistance.",
   "author": {
@@ -68,9 +68,10 @@
     "refresh_token": {
       "type": "string",
       "title": "Spotify Refresh Token",
-      "description": "Your Spotify Refresh Token. After installation, ask Claude: 'Help me get a Spotify refresh token' to obtain this automatically.",
+      "description": "Your Spotify Refresh Token (optional - leave empty during initial setup). After installation, ask Claude: 'Help me get a Spotify refresh token' to obtain this automatically.",
       "sensitive": true,
-      "required": true
+      "required": false,
+      "default": ""
     },
     "log_level": {
       "type": "string",

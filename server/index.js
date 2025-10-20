@@ -13,7 +13,7 @@ import { validateRequired, validateString, validateNumber, validateArray } from 
 class SpotifyMcpServer {
   constructor() {
     this.server = new Server(
-      { name: 'spotify-mcpb', version: '0.2.1' },
+      { name: 'spotify-mcpb', version: '0.2.2' },
       { capabilities: { tools: {} } }
     );
     
@@ -219,16 +219,19 @@ class SpotifyMcpServer {
   }
 
   async handleNextTrack() {
+    this.spotifyController.ensureReady();
     await this.spotifyController.skipToNext();
     return { content: [{ type: 'text', text: JSON.stringify({ status: 'skipped to next track' }) }] };
   }
 
   async handlePreviousTrack() {
+    this.spotifyController.ensureReady();
     await this.spotifyController.skipToPrevious();
     return { content: [{ type: 'text', text: JSON.stringify({ status: 'skipped to previous track' }) }] };
   }
 
   async handleSetVolume(args) {
+    this.spotifyController.ensureReady();
     validateRequired(args, ['volume']);
     validateNumber(args.volume, 'volume', 0, 100, true);
     await this.spotifyController.setVolume(Math.round(args.volume));
@@ -242,11 +245,13 @@ class SpotifyMcpServer {
   }
 
   async handleGetPlaybackState() {
+    this.spotifyController.ensureReady();
     const state = await this.spotifyController.getPlaybackState();
     return { content: [{ type: 'text', text: JSON.stringify(state) }] };
   }
 
   async handleSearchTracks(args) {
+    this.spotifyController.ensureReady();
     validateRequired(args, ['query']);
     validateString(args.query, 'query', 1);
     const limit = args.limit || 20;
@@ -256,6 +261,7 @@ class SpotifyMcpServer {
   }
 
   async handleCreatePlaylist(args) {
+    this.spotifyController.ensureReady();
     validateRequired(args, ['name']);
     validateString(args.name, 'name', 1, 100);
     if (args.description) {
@@ -270,6 +276,7 @@ class SpotifyMcpServer {
   }
 
   async handleAddTracksToPlaylist(args) {
+    this.spotifyController.ensureReady();
     validateRequired(args, ['playlist_id', 'track_uris']);
     validateString(args.playlist_id, 'playlist_id', 1);
     validateArray(args.track_uris, 'track_uris', 1);
@@ -281,6 +288,7 @@ class SpotifyMcpServer {
   }
 
   async handleGetPlaylist(args) {
+    this.spotifyController.ensureReady();
     validateRequired(args, ['playlist_id']);
     validateString(args.playlist_id, 'playlist_id', 1);
     const playlist = await this.spotifyController.getPlaylist(args.playlist_id);
@@ -288,6 +296,7 @@ class SpotifyMcpServer {
   }
 
   async handleGetUserPlaylists(args) {
+    this.spotifyController.ensureReady();
     const limit = args?.limit || 20;
     validateNumber(limit, 'limit', 1, 50, true);
     const playlists = await this.spotifyController.getUserPlaylists(limit);
@@ -295,6 +304,7 @@ class SpotifyMcpServer {
   }
 
   async handleGetRecommendations(args) {
+    this.spotifyController.ensureReady();
     const options = {
       seed_tracks: args?.seed_tracks || [],
       seed_artists: args?.seed_artists || [],
@@ -313,6 +323,7 @@ class SpotifyMcpServer {
   }
 
   async handleGetAudioFeatures(args) {
+    this.spotifyController.ensureReady();
     validateRequired(args, ['track_ids']);
     validateArray(args.track_ids, 'track_ids', 1);
     const features = await this.playlistController.getAudioFeaturesWithCache(args.track_ids);
@@ -320,6 +331,7 @@ class SpotifyMcpServer {
   }
 
   async handleAnalyzePlaylist(args) {
+    this.spotifyController.ensureReady();
     validateRequired(args, ['playlist_id']);
     validateString(args.playlist_id, 'playlist_id', 1);
     const analysis = await this.playlistController.analyzePlaylist(args.playlist_id);
@@ -332,7 +344,7 @@ class SpotifyMcpServer {
     validateString(args.client_id, 'client_id', 1);
     validateString(args.client_secret, 'client_secret', 1);
 
-    const REDIRECT_URI = 'http://localhost:8888/callback';
+    const REDIRECT_URI = 'http://127.0.0.1:8888/callback';
     
     // Create a separate Spotify API instance for token generation
     const spotifyApi = new SpotifyWebApi({
@@ -362,7 +374,7 @@ class SpotifyMcpServer {
       instructions: [
         '1. Visit the authorization_url above in your web browser',
         '2. Log in to Spotify and authorize the application',
-        '3. You will be redirected to http://localhost:8888/callback?code=...',
+        '3. You will be redirected to http://127.0.0.1:8888/callback?code=...',
         '4. Copy the entire URL you were redirected to',
         '5. Call this tool again with: client_id, client_secret, and the authorization_code from the URL'
       ],
@@ -410,7 +422,7 @@ class SpotifyMcpServer {
   async run() {
     try {
       await this.spotifyController.initialize();
-      logger.info('server_started', { name: 'spotify-mcpb', version: '0.2.1' });
+      logger.info('server_started', { name: 'spotify-mcpb', version: '0.2.2' });
       
       const transport = new StdioServerTransport();
       await this.server.connect(transport);
