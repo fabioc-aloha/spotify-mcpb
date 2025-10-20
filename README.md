@@ -1,6 +1,28 @@
 # Spotify MCPB
 
-Control Spotify and create custom playlists using the Spotify Web API through Claude Desktop. Cross-platform support for Windows, macOS, and Linux.
+<p align="center">
+  <img src=".github/banner.svg" alt="Spotify MCPB Banner" width="100%">
+</p>
+
+<p align="center">
+  <strong>Control Spotify and create custom playlists using the Spotify Web API through Claude Desktop.</strong>
+  <br>
+  Cross-platform support for Windows, macOS, and Linux.
+</p>
+
+<p align="center">
+  <a href="https://github.com/fabioc-aloha/spotify-mcpb/releases">
+    <img src="https://img.shields.io/github/v/release/fabioc-aloha/spotify-mcpb?style=flat-square&color=1DB954" alt="Release">
+  </a>
+  <a href="https://github.com/fabioc-aloha/spotify-mcpb/blob/main/LICENSE.md">
+    <img src="https://img.shields.io/github/license/fabioc-aloha/spotify-mcpb?style=flat-square&color=1DB954" alt="License">
+  </a>
+  <a href="https://github.com/fabioc-aloha/spotify-mcpb/stargazers">
+    <img src="https://img.shields.io/github/stars/fabioc-aloha/spotify-mcpb?style=flat-square&color=1DB954" alt="Stars">
+  </a>
+</p>
+
+---
 
 > **Based on [spotify-dxt](https://github.com/kenneth-lien/spotify-dxt)** by Kenneth Lien
 > Rewritten to use Spotify Web API for cross-platform compatibility
@@ -89,7 +111,7 @@ MIT License - See [LICENSE.md](LICENSE.md)
 ## Credits
 
 **Original Project**: [spotify-dxt](https://github.com/kenneth-lien/spotify-dxt) by Kenneth Lien
-**Cross-Platform Port**: Fabio C.
+**Cross-Platform Port**: Fabio Correa
 
 ---
 
