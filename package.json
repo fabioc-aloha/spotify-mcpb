@@ -1,6 +1,6 @@
 {
   "name": "spotify-mcpb",
-  "version": "0.2.2",
+  "version": "0.2.4",
   "description": "Control Spotify and create playlists via Web API - Cross-platform MCP Bundle",
   "type": "module",
   "scripts": {

@@ -30,7 +30,7 @@ Think of it like Chrome extensions (`.crx`) or VS Code extensions (`.vsix`) - us
 
 ### Current Bundle Information
 
-**Bundle File**: `spotify-mcpb-0.2.2.mcpb`
+**Bundle File**: `spotify-mcpb-0.2.4.mcpb`
 **Size**: ~2 MB (compressed), ~6 MB (unpacked)
 **Files**: 1,144+ files
 **Tools**: 16 MCP tools for Spotify control
@@ -55,7 +55,7 @@ The directory has been renamed to `spotify-mcpb` to match the project name, so `
 mcpb pack
 
 # Or specify version explicitly for versioned releases
-mcpb pack . spotify-mcpb-0.2.2.mcpb
+mcpb pack . spotify-mcpb-0.2.4.mcpb
 ```
 
 ### How MCPB Pack Works
@@ -123,7 +123,7 @@ Follow the prompts:
 
 - **Bundle name**: `spotify-mcpb`
 - **Description**: `Control Spotify and create custom playlists using the Spotify Web API`
-- **Version**: `0.2.2`
+- **Version**: `0.2.4`
 - **Entry point**: `node server/index.js`
 
 ### Step 2: Prepare Dependencies
@@ -359,23 +359,27 @@ node server/index.js
 
 **Before using the bundle, you need Spotify API credentials.**
 
-See `SETUP.md` and `REFRESH_TOKEN_GUIDE.md` in the bundle for detailed instructions:
+See `SETUP.md` in the bundle for detailed instructions:
 
 1. **Create Spotify Developer App**
 
    - Go to https://developer.spotify.com/dashboard
    - Create new app
    - Note Client ID and Client Secret
-   - Add redirect URI: `http://localhost:8888/callback`
+   - Add redirect URI: `http://127.0.0.1:8888/callback`
 2. **Get Refresh Token** (Easy Method)
 
-   - Ask Claude: "Help me get a Spotify refresh token"
-   - Follow the interactive OAuth flow
-   - Claude will guide you through the process
+   - Download the project from GitHub
+   - Run `npm install` and then `npm run get-token`
+   - Script automatically handles OAuth flow and provides token
+   - Copy the token for use in Claude Desktop setup
 3. **Configure Bundle**
 
-   - Enter credentials when prompted by Claude Desktop
-   - OR create `.env` file manually
+   - Enter all three credentials when prompted by Claude Desktop:
+     - Client ID
+     - Client Secret
+     - Refresh Token
+   - All tools work immediately after setup
 
 ---
 

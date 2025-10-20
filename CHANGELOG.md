@@ -5,6 +5,158 @@ All notable changes to the Spotify MCPB project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.4-enhanced] - 2025-10-20
+
+### Added
+
+- **Enhanced Smart Play Functionality** - Major upgrade to `spotify_play` tool
+  - **Smart Play**: Enhanced `spotify_play` tool now supports multiple scenarios:
+    - **Resume playback** (no parameters) - Original behavior preserved
+    - **Play search results** (with query) - Searches and plays tracks
+    - **Play playlists by name** - Auto-detects and plays playlists
+    - **Context-aware playing** - Remembers recently created playlists
+  - **Auto-Detection**: Intelligent content type detection based on query
+  - **Context Tracking**: Server remembers recently created/accessed playlists
+  - **Flexible Input**: Supports track searches, playlist names, or explicit type hints
+  - **Rich Responses**: Detailed feedback about what's playing and why
+
+### Enhanced
+
+- **SpotifyWebController**: Added `playTracks(trackUris)` method for playing specific tracks
+- **Context Memory**: Server now tracks recently created playlists for smart play
+- **Tool Schema**: Enhanced `spotify_play` tool with optional query and type parameters
+- **Error Handling**: Improved error messages for different play scenarios
+
+### Technical Implementation
+
+**Enhanced Tool Definition**:
+```javascript
+{
+  name: 'spotify_play',
+  description: 'Smart play function: Resume playback (no params), play search results (with query), or play playlist by name. Auto-detects content type.',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      query: {
+        type: 'string',
+        description: 'Search query for tracks/artists, playlist name, or track URIs. Leave empty to resume playback.'
+      },
+      type: {
+        type: 'string',
+        enum: ['track', 'playlist', 'auto'],
+        default: 'auto',
+        description: 'Type of content to play. "auto" will auto-detect based on query.'
+      }
+    },
+    required: []
+  }
+}
+```
+
+**Smart Detection Logic**:
+- **Query Analysis**: Detects playlist keywords (`playlist`, `mix`, `radio`, `station`)
+- **Length Heuristics**: Short queries without search terms likely playlist names
+- **Recent Context**: Prioritizes recently created playlists in current session
+- **Fuzzy Matching**: Supports partial playlist name matching
+- **Search Fallback**: Defaults to track search when uncertain
+
+**Usage Examples**:
+| User Input | Action | Response |
+|------------|---------|----------|
+| `"Play"` | Resume playback | `{"action": "resume", "status": "playing"}` |
+| `"Play jazz music"` | Search + play jazz tracks | `{"action": "play_tracks", "query": "jazz music", "tracks": [...]}` |
+| `"Play my workout playlist"` | Find + play playlist | `{"action": "play_playlist", "playlist": {...}}` |
+| `"Play My AI Mix"` (just created) | Context-aware playlist play | `{"action": "play_playlist", "message": "Playing recently created playlist"}` |
+
+**Context Tracking Features**:
+- Remembers last 5 recently accessed playlists
+- Stores recently created playlist for immediate access
+- Maintains search results for potential future reference
+- Automatic cleanup of old context data
+
+### Backward Compatibility
+
+- **Preserved Behavior**: Original `spotify_play` (no parameters) still resumes playback
+- **Separate Tool**: `spotify_play_playlist` remains available for explicit playlist control
+- **Tool Count**: Still 22 total tools (enhanced existing functionality)
+
+## [0.2.4] - 2025-10-20
+
+### Added
+
+- **Playlist Playback** - New MCP tool for playing playlists directly
+  - `spotify_play_playlist` - Play a specific playlist by name or ID
+  - **Smart Playlist Search**: Searches user's playlists by name if not a direct ID
+  - **Flexible Input**: Accepts playlist names, Spotify IDs, or Spotify URIs
+  - **Fuzzy Matching**: Supports both exact and partial name matching
+  - **Rich Response**: Returns detailed playlist information after starting playback
+  - **Total Tools**: Now 22 tools (was 21)
+
+### Changed
+
+- **Tool Count**: Updated from 21 to 22 tools across all documentation
+- **Version**: Bumped to 0.2.4 in manifest.json, package.json, and server code
+- **Documentation**: Updated README.md to include new playlist playback capability
+
+### Technical Details
+
+**New API Method in SpotifyWebController**:
+- `playPlaylist(playlistId)` - Uses `PUT /me/player/play` with `context_uri` parameter
+
+**Handler Implementation**:
+- Supports Spotify playlist IDs, URIs, and playlist names
+- Searches user's playlists collection for name-based lookups
+- Case-insensitive exact and partial name matching
+- Validates input and provides detailed error messages
+- Returns comprehensive playlist information in response
+
+**Usage Examples**:
+- `"Play my workout playlist"`
+- `"Play the playlist called 'Chill Vibes'"`
+- `"Play playlist 37i9dQZF1DX0XUsuxWHRQd"` (direct ID)
+
+## [0.2.3] - 2025-10-20
+
+### Added
+
+- **User Library Management** - 5 new MCP tools for managing user's Spotify library
+  - `spotify_get_saved_tracks` - Get user's saved tracks (Liked Songs) with pagination
+  - `spotify_save_tracks` - Save tracks to user's library (add to Liked Songs)
+  - `spotify_remove_saved_tracks` - Remove tracks from user's library
+  - `spotify_check_saved_tracks` - Check if tracks are saved in user's library
+  - `spotify_get_saved_albums` - Get user's saved albums with pagination
+  - **Total Tools**: Now 21 tools (was 16)
+  - **OAuth Scopes**: Requires `user-library-read` and `user-library-modify` scopes
+  - **Batch Support**: All tools support batch operations (up to 50 tracks at once)
+  - **Implementation**: Added methods to `SpotifyWebController` and handlers to main MCP server
+
+### Changed
+
+- **Tool Count**: Updated from 16 to 21 tools across all documentation
+- **Version**: Bumped to 0.2.3 in manifest.json, package.json, and server code
+- **Documentation**: Updated README.md to include User Library Management section
+- **Features**: Added comprehensive User Library features to project description
+
+### Technical Details
+
+**New API Methods in SpotifyWebController**:
+- `getSavedTracks(options)` - Uses `/me/tracks` endpoint
+- `saveTracks(trackIds)` - Uses `PUT /me/tracks` endpoint
+- `removeSavedTracks(trackIds)` - Uses `DELETE /me/tracks` endpoint
+- `checkSavedTracks(trackIds)` - Uses `/me/tracks/contains` endpoint
+- `getSavedAlbums(options)` - Uses `/me/albums` endpoint
+
+**Input Validation**:
+- Track IDs validated for proper format
+- Batch size limited to 50 items per Spotify API constraints
+- Pagination parameters validated (limit: 1-50, offset: ≥0)
+- Market codes validated as 2-letter ISO format
+
+**Error Handling**:
+- Proper MCP error responses for all failure cases
+- Structured logging for all operations
+- Authentication checks with `ensureReady()` calls
+
 ## [0.2.1] - 2025-10-20
 
 ### Fixed

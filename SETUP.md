@@ -6,15 +6,9 @@ Complete guide to getting your Spotify MCPB bundle up and running.
 
 ## Installation & Setup Process
 
-### Step 1: Install the Bundle
+### Step 1: Get Spotify Developer Credentials
 
-1. Download `spotify-mcpb-0.2.2.mcpb` from [releases](https://github.com/fabioc-aloha/spotify-mcpb/releases)
-2. Double-click the `.mcpb` file to install in Claude Desktop
-3. Claude Desktop will show a configuration dialog
-
-### Step 2: Get Spotify Developer Credentials
-
-Before you can fill in the configuration dialog, you need to create a Spotify Developer App:
+First, you need to create a Spotify Developer App:
 
 1. Go to [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)
 2. Log in with your Spotify account
@@ -29,32 +23,47 @@ Before you can fill in the configuration dialog, you need to create a Spotify De
 7. Note your **Client ID**
 8. Click **"View client secret"** and note your **Client Secret**
 
-### Step 3: Fill in the Configuration Dialog
+### Step 2: Generate Your Refresh Token
 
-When Claude Desktop asks for configuration:
+**⚡ Easy Token Generation!** Use the included script to get your refresh token:
 
-1. **Spotify Client ID**: Paste the Client ID from Step 2
-2. **Spotify Client Secret**: Paste the Client Secret from Step 2
-3. **Spotify Refresh Token**: Leave empty for now (you'll get this next)
+1. **Download and extract** the project from [GitHub](https://github.com/fabioc-aloha/spotify-mcpb)
+2. **Install dependencies**: `npm install`
+3. **Run the token script**: `npm run get-token`
+
+The script will:
+- ✅ Start a local server on port 8888
+- ✅ Open your browser automatically to Spotify's authorization page
+- ✅ Handle the OAuth callback automatically
+- ✅ Display your refresh token
+- ✅ Copy it to your clipboard (on supported systems)
+
+**Alternative method**: If the script doesn't work, run `npm run manual-token` for step-by-step manual instructions.
+
+### Step 3: Install the Bundle
+
+1. Download `spotify-mcpb-0.2.4.mcpb` from [releases](https://github.com/fabioc-aloha/spotify-mcpb/releases)
+2. Double-click the `.mcpb` file to install in Claude Desktop
+3. Claude Desktop will show a configuration dialog
+
+### Step 4: Complete the Configuration
+
+When Claude Desktop asks for configuration, enter all three values:
+
+1. **Spotify Client ID**: Paste the Client ID from Step 1
+2. **Spotify Client Secret**: Paste the Client Secret from Step 1
+3. **Spotify Refresh Token**: Paste the refresh token from Step 2
 4. **Log Level**: Leave default as "info" (or choose: debug, warn, error)
 
-Click **Save** or **Install** to continue.
+Click **Save** or **Install** to complete the setup.
 
-### Step 4: Get Your Refresh Token (Automatic!)
+## ✅ You're Ready!
 
-After the bundle is installed, simply ask Claude:
+That's it! You can now use all Spotify commands:
 
-```
-"Help me get a Spotify refresh token"
-```
-
-Claude will:
-1. Generate an authorization URL for you
-2. Guide you through the Spotify authorization process
-3. Exchange your authorization code for a refresh token
-4. Provide the refresh token to save back in the configuration
-
-Then update the configuration with your refresh token and you're done!
+- **Try**: "What's currently playing on Spotify?"
+- **Try**: "Create a playlist called 'My AI Playlist'"
+- **Try**: "Search for tracks by your favorite artist"
 
 ---
 
@@ -66,18 +75,14 @@ Then update the configuration with your refresh token and you're done!
 |-------|-------|---------------|
 | **Spotify Client ID** | Your app's Client ID | Spotify Developer Dashboard > Your App > Settings |
 | **Spotify Client Secret** | Your app's Client Secret | Spotify Developer Dashboard > Your App > Settings > View client secret |
-| **Spotify Refresh Token** | Leave empty initially | After installation, ask Claude: "Help me get a Spotify refresh token" |
+| **Spotify Refresh Token** | Token from script | Run `npm run get-token` in project directory |
 | **Log Level** | `info` (default) | Optional: debug, info, warn, or error |
 
 ---
 
 ## Alternative: Manual Refresh Token Method
 
-If you prefer not to use Claude's interactive method, you can obtain a refresh token manually:
-
-## Alternative: Manual Refresh Token Method
-
-If you prefer not to use Claude's interactive method, you can obtain a refresh token manually:
+If the `npm run get-token` script doesn't work, you can use the manual method:
 
 1. Clone the helper script:
    ```bash
@@ -136,7 +141,7 @@ npm start
 
 The server should start and log:
 ```json
-{"timestamp":"...","level":"info","event":"server_started","name":"spotify-mcpb","version":"0.2.2"}
+{"timestamp":"...","level":"info","event":"server_started","name":"spotify-mcpb","version":"0.2.4"}
 ```
 
 ### Test with Claude:

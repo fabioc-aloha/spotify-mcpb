@@ -13,12 +13,19 @@ import { validateRequired, validateString, validateNumber, validateArray } from 
 class SpotifyMcpServer {
   constructor() {
     this.server = new Server(
-      { name: 'spotify-mcpb', version: '0.2.2' },
+      { name: 'spotify-mcpb', version: '0.2.4' },
       { capabilities: { tools: {} } }
     );
     
     this.spotifyController = new SpotifyWebController();
     this.playlistController = new PlaylistController(this.spotifyController);
+    
+    // Context tracking for smart play functionality
+    this.recentContext = {
+      playlists: [], // Recently created/accessed playlists
+      searchResults: null, // Last search results
+      lastCreatedPlaylist: null // Most recently created playlist
+    };
     
     this.setupHandlers();
   }
@@ -28,8 +35,37 @@ class SpotifyMcpServer {
       tools: [
         {
           name: 'spotify_play',
-          description: 'Resume playback on the active Spotify device',
-          inputSchema: { type: 'object', properties: {}, required: [] }
+          description: 'Smart play function: Resume playback (no params), play search results (with query), or play playlist by name. Auto-detects content type.',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              query: {
+                type: 'string',
+                description: 'Search query for tracks/artists, playlist name, or track URIs. Leave empty to resume playback.'
+              },
+              type: {
+                type: 'string',
+                enum: ['track', 'playlist', 'auto'],
+                default: 'auto',
+                description: 'Type of content to play. "auto" will auto-detect based on query.'
+              }
+            },
+            required: []
+          }
+        },
+        {
+          name: 'spotify_play_playlist',
+          description: 'Play a specific playlist by name or ID. Searches user\'s playlists by name if not an ID.',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              playlist: {
+                type: 'string',
+                description: 'Playlist name or Spotify playlist ID'
+              }
+            },
+            required: ['playlist']
+          }
         },
         {
           name: 'spotify_pause',
@@ -159,15 +195,85 @@ class SpotifyMcpServer {
         },
         {
           name: 'spotify_get_refresh_token',
-          description: 'Generate a Spotify refresh token for authentication. Step 1: Call with client_id and client_secret to get authorization URL. Step 2: Visit the URL in browser, authorize, then call again with the authorization_code from the redirect URL to get the refresh token.',
+          description: 'Get instructions for obtaining a Spotify refresh token using the provided script. This tool provides step-by-step guidance for running the token generation script and obtaining the refresh token needed for Spotify API access.',
+          inputSchema: {
+            type: 'object',
+            properties: {},
+            required: []
+          }
+        },
+        {
+          name: 'spotify_get_saved_tracks',
+          description: 'Get user\'s saved tracks (Liked Songs) from their library. Returns paginated list of saved tracks with details.',
           inputSchema: {
             type: 'object',
             properties: {
-              client_id: { type: 'string', minLength: 1, description: 'Spotify Client ID from Developer Dashboard' },
-              client_secret: { type: 'string', minLength: 1, description: 'Spotify Client Secret from Developer Dashboard' },
-              authorization_code: { type: 'string', description: 'Optional: The authorization code from the redirect URL after user authorizes the app' }
+              limit: { type: 'integer', minimum: 1, maximum: 50, default: 20 },
+              offset: { type: 'integer', minimum: 0, default: 0 },
+              market: { type: 'string', pattern: '^[A-Z]{2}$' }
             },
-            required: ['client_id', 'client_secret']
+            required: []
+          }
+        },
+        {
+          name: 'spotify_save_tracks',
+          description: 'Save tracks to user\'s library (add to Liked Songs). Accepts single track ID or array of track IDs.',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              track_ids: {
+                oneOf: [
+                  { type: 'string', minLength: 1 },
+                  { type: 'array', items: { type: 'string', minLength: 1 }, minItems: 1, maxItems: 50 }
+                ]
+              }
+            },
+            required: ['track_ids']
+          }
+        },
+        {
+          name: 'spotify_remove_saved_tracks',
+          description: 'Remove tracks from user\'s library (remove from Liked Songs). Accepts single track ID or array of track IDs.',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              track_ids: {
+                oneOf: [
+                  { type: 'string', minLength: 1 },
+                  { type: 'array', items: { type: 'string', minLength: 1 }, minItems: 1, maxItems: 50 }
+                ]
+              }
+            },
+            required: ['track_ids']
+          }
+        },
+        {
+          name: 'spotify_check_saved_tracks',
+          description: 'Check if tracks are saved in user\'s library (are in Liked Songs). Returns boolean array indicating save status for each track.',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              track_ids: {
+                oneOf: [
+                  { type: 'string', minLength: 1 },
+                  { type: 'array', items: { type: 'string', minLength: 1 }, minItems: 1, maxItems: 50 }
+                ]
+              }
+            },
+            required: ['track_ids']
+          }
+        },
+        {
+          name: 'spotify_get_saved_albums',
+          description: 'Get user\'s saved albums from their library. Returns paginated list of saved albums with details.',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              limit: { type: 'integer', minimum: 1, maximum: 50, default: 20 },
+              offset: { type: 'integer', minimum: 0, default: 0 },
+              market: { type: 'string', pattern: '^[A-Z]{2}$' }
+            },
+            required: []
           }
         }
       ]
@@ -178,7 +284,8 @@ class SpotifyMcpServer {
         const { name, arguments: args } = request.params;
         
         switch (name) {
-          case 'spotify_play': return await this.handlePlay();
+          case 'spotify_play': return await this.handlePlay(args);
+          case 'spotify_play_playlist': return await this.handlePlayPlaylist(args);
           case 'spotify_pause': return await this.handlePause();
           case 'spotify_next_track': return await this.handleNextTrack();
           case 'spotify_previous_track': return await this.handlePreviousTrack();
@@ -194,6 +301,11 @@ class SpotifyMcpServer {
           case 'spotify_get_audio_features': return await this.handleGetAudioFeatures(args);
           case 'spotify_analyze_playlist': return await this.handleAnalyzePlaylist(args);
           case 'spotify_get_refresh_token': return await this.handleGetRefreshToken(args);
+          case 'spotify_get_saved_tracks': return await this.handleGetSavedTracks(args);
+          case 'spotify_save_tracks': return await this.handleSaveTracks(args);
+          case 'spotify_remove_saved_tracks': return await this.handleRemoveSavedTracks(args);
+          case 'spotify_check_saved_tracks': return await this.handleCheckSavedTracks(args);
+          case 'spotify_get_saved_albums': return await this.handleGetSavedAlbums(args);
           default:
             throw new InvalidArgumentError(`Unknown tool: ${name}`);
         }
@@ -206,10 +318,269 @@ class SpotifyMcpServer {
     });
   }
 
-  async handlePlay() {
-    this.spotifyController.ensureReady();
-    await this.spotifyController.play();
-    return { content: [{ type: 'text', text: JSON.stringify({ status: 'playing' }) }] };
+  async handlePlay(args = {}) {
+    await this.ensureReady();
+
+    try {
+      const { query, type = 'auto' } = args;
+
+      // No query = resume playback (original behavior)
+      if (!query) {
+        logger.info('resuming_playback');
+        await this.spotifyController.play();
+        return { 
+          content: [{ 
+            type: 'text', 
+            text: JSON.stringify({ 
+              action: 'resume',
+              status: 'playing',
+              message: 'Resumed playback'
+            }, null, 2)
+          }] 
+        };
+      }
+
+      logger.info('smart_play_called', { query, type });
+
+      // Smart detection based on query and type
+      if (type === 'playlist' || this.isPlaylistQuery(query)) {
+        return await this.playPlaylistByQuery(query);
+      } else if (type === 'track' || this.isTrackQuery(query)) {
+        return await this.playTracksByQuery(query);
+      } else if (type === 'auto') {
+        // Auto-detect based on query characteristics
+        if (this.looksLikePlaylistName(query)) {
+          return await this.playPlaylistByQuery(query);
+        } else {
+          return await this.playTracksByQuery(query);
+        }
+      }
+
+      // Fallback to track search
+      return await this.playTracksByQuery(query);
+
+    } catch (error) {
+      logger.error('smart_play_failed', { error: error.message, query: args.query });
+      return handleError(error, 'playing content').toResponse();
+    }
+  }
+
+  // Helper: Check if query is asking for a playlist
+  isPlaylistQuery(query) {
+    const playlistKeywords = ['playlist', 'mix', 'radio', 'station'];
+    return playlistKeywords.some(keyword => 
+      query.toLowerCase().includes(keyword)
+    );
+  }
+
+  // Helper: Check if query is specifically for tracks
+  isTrackQuery(query) {
+    const trackKeywords = ['track', 'song', 'by ', 'artist', 'album'];
+    return trackKeywords.some(keyword => 
+      query.toLowerCase().includes(keyword)
+    );
+  }
+
+  // Helper: Check if query looks like a playlist name
+  looksLikePlaylistName(query) {
+    // If it's short and doesn't contain typical search terms, might be playlist name
+    const searchTerms = [' by ', ' artist', ' track', ' song'];
+    const hasSearchTerms = searchTerms.some(term => 
+      query.toLowerCase().includes(term)
+    );
+    
+    // If no search terms and reasonably short, likely a playlist name
+    return !hasSearchTerms && query.length < 50;
+  }
+
+  // Helper: Play playlist by search/name
+  async playPlaylistByQuery(query) {
+    // First check if it matches recently created playlist
+    if (this.recentContext.lastCreatedPlaylist && 
+        query.toLowerCase().includes(this.recentContext.lastCreatedPlaylist.name.toLowerCase())) {
+      logger.info('playing_recent_playlist', { 
+        playlistName: this.recentContext.lastCreatedPlaylist.name 
+      });
+      
+      await this.spotifyController.playPlaylist(this.recentContext.lastCreatedPlaylist.id);
+      
+      return { 
+        content: [{ 
+          type: 'text', 
+          text: JSON.stringify({ 
+            action: 'play_playlist',
+            status: 'playing',
+            playlist: this.recentContext.lastCreatedPlaylist,
+            message: `Playing recently created playlist: ${this.recentContext.lastCreatedPlaylist.name}`
+          }, null, 2)
+        }] 
+      };
+    }
+
+    // Search user's playlists
+    const playlists = await this.spotifyController.getUserPlaylists({ limit: 50 });
+    const playlist = playlists.items.find(p => 
+      p.name.toLowerCase().includes(query.toLowerCase()) ||
+      query.toLowerCase().includes(p.name.toLowerCase())
+    );
+
+    if (playlist) {
+      logger.info('playing_found_playlist', { playlistName: playlist.name });
+      await this.spotifyController.playPlaylist(playlist.id);
+      
+      return { 
+        content: [{ 
+          type: 'text', 
+          text: JSON.stringify({ 
+            action: 'play_playlist',
+            status: 'playing',
+            playlist: {
+              id: playlist.id,
+              name: playlist.name,
+              tracks: playlist.tracks.total
+            },
+            message: `Playing playlist: ${playlist.name}`
+          }, null, 2)
+        }] 
+      };
+    }
+
+    throw new McpToolError('PLAYLIST_NOT_FOUND', `No playlist found matching "${query}"`);
+  }
+
+  // Helper: Play tracks by search
+  async playTracksByQuery(query) {
+    const searchResults = await this.spotifyController.searchTracks(query, { limit: 10 });
+    
+    if (!searchResults.tracks.items.length) {
+      throw new McpToolError('NO_TRACKS_FOUND', `No tracks found for "${query}"`);
+    }
+
+    // Store search results in context for future reference
+    this.recentContext.searchResults = {
+      query,
+      tracks: searchResults.tracks.items,
+      timestamp: Date.now()
+    };
+
+    // Get URIs of found tracks
+    const trackUris = searchResults.tracks.items.slice(0, 5).map(track => track.uri);
+    
+    logger.info('playing_search_results', { 
+      query, 
+      trackCount: trackUris.length,
+      firstTrack: searchResults.tracks.items[0].name
+    });
+
+    await this.spotifyController.playTracks(trackUris);
+
+    return { 
+      content: [{ 
+        type: 'text', 
+        text: JSON.stringify({ 
+          action: 'play_tracks',
+          status: 'playing',
+          query,
+          tracks: searchResults.tracks.items.slice(0, 5).map(track => ({
+            name: track.name,
+            artist: track.artists.map(a => a.name).join(', '),
+            album: track.album.name
+          })),
+          message: `Playing ${trackUris.length} tracks for "${query}"`
+        }, null, 2)
+      }] 
+    };
+  }
+
+  async handlePlayPlaylist(args) {
+    await this.ensureReady();
+
+    try {
+      const { playlist } = args;
+      validateRequired(args, ['playlist']);
+      validateString(playlist, 'playlist', { minLength: 1 });
+
+      logger.info('play_playlist_called', { playlist });
+
+      // Check if it's already a Spotify ID (contains only alphanumeric characters and is long enough)
+      const isSpotifyId = /^[a-zA-Z0-9]{22}$/.test(playlist);
+      
+      let playlistId;
+      
+      if (isSpotifyId || playlist.startsWith('spotify:')) {
+        // Direct ID or URI
+        playlistId = playlist;
+        logger.info('play_playlist_direct_id', { playlistId });
+      } else {
+        // Search by name in user's playlists
+        logger.info('play_playlist_search_by_name', { playlistName: playlist });
+        
+        const userPlaylists = await this.spotifyController.getUserPlaylists({ limit: 50 });
+        const playlists = userPlaylists.body.items;
+        
+        // Find playlist by name (case-insensitive)
+        const matchedPlaylist = playlists.find(p => 
+          p.name.toLowerCase() === playlist.toLowerCase()
+        );
+        
+        if (!matchedPlaylist) {
+          // Try partial match if exact match fails
+          const partialMatch = playlists.find(p => 
+            p.name.toLowerCase().includes(playlist.toLowerCase())
+          );
+          
+          if (!partialMatch) {
+            return handleError(
+              new InvalidArgumentError(`Playlist "${playlist}" not found in your playlists`),
+              'finding playlist'
+            ).toResponse();
+          }
+          
+          logger.info('play_playlist_partial_match', { 
+            searchTerm: playlist, 
+            foundName: partialMatch.name 
+          });
+          playlistId = partialMatch.id;
+        } else {
+          logger.info('play_playlist_exact_match', { 
+            searchTerm: playlist, 
+            foundName: matchedPlaylist.name 
+          });
+          playlistId = matchedPlaylist.id;
+        }
+      }
+
+      // Play the playlist
+      await this.spotifyController.playPlaylist(playlistId);
+      
+      // Get playlist info for response
+      const playlistInfo = await this.spotifyController.getPlaylist(playlistId);
+      const playlist_data = playlistInfo.body;
+
+      return {
+        content: [{
+          type: "text",
+          text: JSON.stringify({
+            status: 'playing_playlist',
+            playlist: {
+              id: playlist_data.id,
+              name: playlist_data.name,
+              description: playlist_data.description,
+              owner: playlist_data.owner.display_name,
+              total_tracks: playlist_data.tracks.total,
+              public: playlist_data.public,
+              uri: playlist_data.uri,
+              external_urls: playlist_data.external_urls
+            },
+            message: `Now playing playlist: ${playlist_data.name}`
+          }, null, 2)
+        }]
+      };
+
+    } catch (error) {
+      logger.error('play_playlist_failed', { error: error.message, playlist: args.playlist });
+      return handleError(error, 'playing playlist').toResponse();
+    }
   }
 
   async handlePause() {
@@ -267,11 +638,32 @@ class SpotifyMcpServer {
     if (args.description) {
       validateString(args.description, 'description', 0, 300);
     }
+    
     const playlist = await this.spotifyController.createPlaylist(
       args.name,
       args.description || '',
       args.public !== false
     );
+
+    // Store in recent context for smart play functionality
+    this.recentContext.lastCreatedPlaylist = {
+      id: playlist.id,
+      name: playlist.name,
+      description: playlist.description,
+      timestamp: Date.now()
+    };
+    
+    // Add to recent playlists list (keep last 5)
+    this.recentContext.playlists.unshift(this.recentContext.lastCreatedPlaylist);
+    if (this.recentContext.playlists.length > 5) {
+      this.recentContext.playlists = this.recentContext.playlists.slice(0, 5);
+    }
+
+    logger.info('playlist_created_and_stored', { 
+      playlistId: playlist.id, 
+      playlistName: playlist.name 
+    });
+
     return { content: [{ type: 'text', text: JSON.stringify(playlist) }] };
   }
 
@@ -339,90 +731,314 @@ class SpotifyMcpServer {
   }
 
   async handleGetRefreshToken(args) {
-    // This tool works independently - no need for main controller initialization
-    validateRequired(args, ['client_id', 'client_secret']);
-    validateString(args.client_id, 'client_id', 1);
-    validateString(args.client_secret, 'client_secret', 1);
-
-    const REDIRECT_URI = 'http://127.0.0.1:8888/callback';
+    // This tool provides instructions for getting refresh token using the standalone script
     
-    // Create a separate Spotify API instance for token generation
-    const spotifyApi = new SpotifyWebApi({
-      clientId: args.client_id,
-      clientSecret: args.client_secret,
-      redirectUri: REDIRECT_URI,
-    });
-
-    const scopes = [
-      'user-read-playback-state',
-      'user-modify-playback-state',
-      'user-read-currently-playing',
-      'playlist-read-private',
-      'playlist-read-collaborative',
-      'playlist-modify-public',
-      'playlist-modify-private',
-      'user-library-read',
-      'user-top-read',
-    ];
-
-    const authorizeURL = spotifyApi.createAuthorizeURL(scopes);
-    
-    const result = {
-      step: 1,
-      message: 'Authorization required. Please visit the URL below in your browser, authorize the app, and you will be redirected to a URL with a code parameter.',
-      authorization_url: authorizeURL,
-      instructions: [
-        '1. Visit the authorization_url above in your web browser',
-        '2. Log in to Spotify and authorize the application',
-        '3. You will be redirected to http://127.0.0.1:8888/callback?code=...',
-        '4. Copy the entire URL you were redirected to',
-        '5. Call this tool again with: client_id, client_secret, and the authorization_code from the URL'
+    const instructions = {
+      message: "📋 Spotify Refresh Token Setup Instructions",
+      overview: "To use Spotify MCPB, you need to provide your refresh token during the Claude Desktop setup. Follow these steps to get your refresh token:",
+      steps: [
+        {
+          step: 1,
+          title: "Run the Token Generation Script",
+          description: "Use the included script to get your refresh token",
+          commands: {
+            windows: "npm run get-token",
+            mac_linux: "npm run get-token"
+          },
+          details: [
+            "This will start a local server on port 8888",
+            "Your browser will open automatically to Spotify's authorization page",
+            "Log in to Spotify and authorize the app",
+            "The script will automatically capture the token and display it"
+          ]
+        },
+        {
+          step: 2, 
+          title: "Copy the Refresh Token",
+          description: "The script will display your refresh token",
+          action: "Copy the refresh token value (starts with 'AQ...')"
+        },
+        {
+          step: 3,
+          title: "Update Claude Desktop Configuration", 
+          description: "Add the refresh token to your Spotify MCPB configuration",
+          action: "Set SPOTIFY_REFRESH_TOKEN to the token value you copied"
+        },
+        {
+          step: 4,
+          title: "Start Using Spotify MCPB",
+          description: "You can now use all Spotify commands!",
+          examples: [
+            "What's currently playing on Spotify?",
+            "Create a playlist called 'My AI Playlist'",
+            "Search for tracks by your favorite artist"
+          ]
+        }
       ],
-      next_step: 'Once you have the authorization code from the redirect URL, call this tool again with the "authorization_code" parameter included'
+      alternative_method: {
+        title: "Alternative: Manual Method",
+        description: "If the script doesn't work, you can use the manual method:",
+        command: "npm run manual-token",
+        note: "This provides step-by-step manual instructions for getting the token"
+      },
+      prerequisites: [
+        "Spotify Developer App created at https://developer.spotify.com/dashboard",
+        "Client ID and Client Secret configured in Claude Desktop",
+        "Redirect URI set to: http://127.0.0.1:8888/callback"
+      ],
+      troubleshooting: {
+        port_in_use: "If port 8888 is in use, the script will show an error. Stop other applications using that port.",
+        browser_issues: "If browser doesn't open automatically, copy the URL from the script output and open it manually.",
+        token_invalid: "If the token doesn't work, regenerate it using the script again."
+      }
     };
 
-    // If authorization_code is provided, exchange it for tokens
-    if (args.authorization_code) {
-      try {
-        const data = await spotifyApi.authorizationCodeGrant(args.authorization_code);
-        return {
-          content: [{
-            type: 'text',
-            text: JSON.stringify({
-              success: true,
-              refresh_token: data.body.refresh_token,
-              access_token: data.body.access_token,
-              expires_in: data.body.expires_in,
-              message: 'Success! Save the refresh_token to your .env file or bundle configuration as SPOTIFY_REFRESH_TOKEN',
-              instructions: [
-                '1. Copy the refresh_token value above',
-                '2. Add it to your .env file as: SPOTIFY_REFRESH_TOKEN=<your_token>',
-                '3. You can now use all Spotify tools'
-              ]
-            }, null, 2)
-          }]
-        };
-      } catch (error) {
-        const errorMessage = error.message || 'Unknown error';
-        let helpText = 'Make sure the authorization code is valid and hasn\'t been used already.';
-        
-        if (errorMessage.includes('invalid_grant')) {
-          helpText = 'The authorization code has expired or been used already. Please get a new code by visiting the authorization URL again.';
-        } else if (errorMessage.includes('invalid_client')) {
-          helpText = 'Invalid client credentials. Please check your Client ID and Client Secret.';
-        }
-        
-        throw new InvalidArgumentError(`Failed to exchange authorization code: ${errorMessage}. ${helpText}`);
-      }
-    }
+    return {
+      content: [{
+        type: "text",
+        text: JSON.stringify(instructions, null, 2)
+      }]
+    };
+  }
 
-    return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+  // === USER LIBRARY MANAGEMENT HANDLERS ===
+
+  async handleGetSavedTracks(args) {
+    await this.ensureReady();
+
+    try {
+      const { limit = 20, offset = 0, market } = args;
+      validateNumber(limit, 'limit', { min: 1, max: 50, integer: true });
+      validateNumber(offset, 'offset', { min: 0, integer: true });
+      if (market) validateString(market, 'market', { minLength: 2, maxLength: 2 });
+
+      logger.info('get_saved_tracks_called', { limit, offset, market });
+
+      const result = await this.spotifyController.getSavedTracks({ limit, offset, market });
+      const tracks = result.body;
+
+      return {
+        content: [{
+          type: "text",
+          text: JSON.stringify({
+            total: tracks.total,
+            limit: tracks.limit,
+            offset: tracks.offset,
+            next: tracks.next,
+            previous: tracks.previous,
+            items: tracks.items.map(item => ({
+              added_at: item.added_at,
+              track: {
+                id: item.track.id,
+                name: item.track.name,
+                artists: item.track.artists.map(artist => ({
+                  id: artist.id,
+                  name: artist.name
+                })),
+                album: {
+                  id: item.track.album.id,
+                  name: item.track.album.name,
+                  release_date: item.track.album.release_date
+                },
+                duration_ms: item.track.duration_ms,
+                popularity: item.track.popularity,
+                explicit: item.track.explicit,
+                external_urls: item.track.external_urls,
+                uri: item.track.uri
+              }
+            }))
+          }, null, 2)
+        }]
+      };
+
+    } catch (error) {
+      logger.error('get_saved_tracks_failed', { error: error.message });
+      return handleError(error, 'getting saved tracks').toResponse();
+    }
+  }
+
+  async handleSaveTracks(args) {
+    await this.ensureReady();
+
+    try {
+      const { track_ids } = args;
+      validateRequired(args, ['track_ids']);
+      
+      // Convert single ID to array
+      const trackIds = Array.isArray(track_ids) ? track_ids : [track_ids];
+      
+      // Validate track IDs
+      for (const trackId of trackIds) {
+        validateString(trackId, 'track_id', { minLength: 1 });
+      }
+
+      if (trackIds.length > 50) {
+        throw new InvalidArgumentError('Cannot save more than 50 tracks at once');
+      }
+
+      logger.info('save_tracks_called', { count: trackIds.length });
+
+      await this.spotifyController.saveTracks(trackIds);
+
+      return {
+        content: [{
+          type: "text",
+          text: JSON.stringify({
+            success: true,
+            message: `Successfully saved ${trackIds.length} track(s) to your library`,
+            track_count: trackIds.length
+          }, null, 2)
+        }]
+      };
+
+    } catch (error) {
+      logger.error('save_tracks_failed', { error: error.message });
+      return handleError(error, 'saving tracks to library').toResponse();
+    }
+  }
+
+  async handleRemoveSavedTracks(args) {
+    await this.ensureReady();
+
+    try {
+      const { track_ids } = args;
+      validateRequired(args, ['track_ids']);
+      
+      // Convert single ID to array
+      const trackIds = Array.isArray(track_ids) ? track_ids : [track_ids];
+      
+      // Validate track IDs
+      for (const trackId of trackIds) {
+        validateString(trackId, 'track_id', { minLength: 1 });
+      }
+
+      if (trackIds.length > 50) {
+        throw new InvalidArgumentError('Cannot remove more than 50 tracks at once');
+      }
+
+      logger.info('remove_saved_tracks_called', { count: trackIds.length });
+
+      await this.spotifyController.removeSavedTracks(trackIds);
+
+      return {
+        content: [{
+          type: "text",
+          text: JSON.stringify({
+            success: true,
+            message: `Successfully removed ${trackIds.length} track(s) from your library`,
+            track_count: trackIds.length
+          }, null, 2)
+        }]
+      };
+
+    } catch (error) {
+      logger.error('remove_saved_tracks_failed', { error: error.message });
+      return handleError(error, 'removing tracks from library').toResponse();
+    }
+  }
+
+  async handleCheckSavedTracks(args) {
+    await this.ensureReady();
+
+    try {
+      const { track_ids } = args;
+      validateRequired(args, ['track_ids']);
+      
+      // Convert single ID to array
+      const trackIds = Array.isArray(track_ids) ? track_ids : [track_ids];
+      
+      // Validate track IDs
+      for (const trackId of trackIds) {
+        validateString(trackId, 'track_id', { minLength: 1 });
+      }
+
+      if (trackIds.length > 50) {
+        throw new InvalidArgumentError('Cannot check more than 50 tracks at once');
+      }
+
+      logger.info('check_saved_tracks_called', { count: trackIds.length });
+
+      const result = await this.spotifyController.checkSavedTracks(trackIds);
+      const savedStatus = result.body;
+
+      return {
+        content: [{
+          type: "text",
+          text: JSON.stringify({
+            track_count: trackIds.length,
+            saved_status: trackIds.map((trackId, index) => ({
+              track_id: trackId,
+              is_saved: savedStatus[index]
+            })),
+            summary: {
+              total_tracks: trackIds.length,
+              saved_tracks: savedStatus.filter(Boolean).length,
+              unsaved_tracks: savedStatus.filter(saved => !saved).length
+            }
+          }, null, 2)
+        }]
+      };
+
+    } catch (error) {
+      logger.error('check_saved_tracks_failed', { error: error.message });
+      return handleError(error, 'checking saved tracks').toResponse();
+    }
+  }
+
+  async handleGetSavedAlbums(args) {
+    await this.ensureReady();
+
+    try {
+      const { limit = 20, offset = 0, market } = args;
+      validateNumber(limit, 'limit', { min: 1, max: 50, integer: true });
+      validateNumber(offset, 'offset', { min: 0, integer: true });
+      if (market) validateString(market, 'market', { minLength: 2, maxLength: 2 });
+
+      logger.info('get_saved_albums_called', { limit, offset, market });
+
+      const result = await this.spotifyController.getSavedAlbums({ limit, offset, market });
+      const albums = result.body;
+
+      return {
+        content: [{
+          type: "text",
+          text: JSON.stringify({
+            total: albums.total,
+            limit: albums.limit,
+            offset: albums.offset,
+            next: albums.next,
+            previous: albums.previous,
+            items: albums.items.map(item => ({
+              added_at: item.added_at,
+              album: {
+                id: item.album.id,
+                name: item.album.name,
+                artists: item.album.artists.map(artist => ({
+                  id: artist.id,
+                  name: artist.name
+                })),
+                release_date: item.album.release_date,
+                total_tracks: item.album.total_tracks,
+                album_type: item.album.album_type,
+                external_urls: item.album.external_urls,
+                uri: item.album.uri,
+                images: item.album.images
+              }
+            }))
+          }, null, 2)
+        }]
+      };
+
+    } catch (error) {
+      logger.error('get_saved_albums_failed', { error: error.message });
+      return handleError(error, 'getting saved albums').toResponse();
+    }
   }
 
   async run() {
     try {
       await this.spotifyController.initialize();
-      logger.info('server_started', { name: 'spotify-mcpb', version: '0.2.2' });
+      logger.info('server_started', { name: 'spotify-mcpb', version: '0.2.4' });
       
       const transport = new StdioServerTransport();
       await this.server.connect(transport);

@@ -2,7 +2,7 @@
   "manifest_version": "0.2",
   "name": "spotify-mcpb",
   "display_name": "Spotify Playlist Creator",
-  "version": "0.2.2",
+  "version": "0.2.4",
   "description": "Control Spotify and create playlists using the Spotify Web API",
   "long_description": "This MCPB extension provides comprehensive Spotify control and playlist management capabilities. Use it to play music, control playback, search for tracks, create and curate playlists, add tracks, analyze playlists, and more. Works cross-platform (Windows, macOS, Linux) using the Spotify Web API. Perfect for building custom music workflows and playlist curation with AI assistance.",
   "author": {
@@ -68,23 +68,26 @@
     "refresh_token": {
       "type": "string",
       "title": "Spotify Refresh Token",
-      "description": "Your Spotify Refresh Token (optional - leave empty during initial setup). After installation, ask Claude: 'Help me get a Spotify refresh token' to obtain this automatically.",
+      "description": "Your Spotify Refresh Token. Run 'npm run get-token' in the project directory to obtain this token, then enter it here.",
       "sensitive": true,
-      "required": false,
-      "default": ""
+      "required": true
     },
     "log_level": {
       "type": "string",
       "title": "Log Level",
       "description": "Logging level: debug, info, warn, or error",
       "default": "info",
-      "required": false
+      "required": true
     }
   },
   "tools": [
     {
       "name": "spotify_play",
       "description": "Resume playback"
+    },
+    {
+      "name": "spotify_play_playlist",
+      "description": "Play a specific playlist by name or ID"
     },
     {
       "name": "spotify_pause",
@@ -145,6 +148,26 @@
     {
       "name": "spotify_get_refresh_token",
       "description": "Generate a Spotify refresh token (interactive tool for getting credentials)"
+    },
+    {
+      "name": "spotify_get_saved_tracks",
+      "description": "Get user's saved tracks (Liked Songs) from their library"
+    },
+    {
+      "name": "spotify_save_tracks",
+      "description": "Save tracks to user's library (add to Liked Songs)"
+    },
+    {
+      "name": "spotify_remove_saved_tracks",
+      "description": "Remove tracks from user's library (remove from Liked Songs)"
+    },
+    {
+      "name": "spotify_check_saved_tracks",
+      "description": "Check if tracks are saved in user's library"
+    },
+    {
+      "name": "spotify_get_saved_albums",
+      "description": "Get user's saved albums from their library"
     }
   ],
   "tools_generated": false

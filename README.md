@@ -58,9 +58,9 @@
 - **🤖 AI-Powered Control** - Control Spotify using natural language through Claude Desktop
 - **🎨 Smart Playlists** - Create and curate playlists with AI assistance
 - **🔍 Deep Analysis** - Get detailed audio feature analysis and statistics
-- **⚡ Easy Setup** - Interactive OAuth flow - no manual scripts needed
+- **⚡ Easy Setup** - Simple token generation script - no complex OAuth needed
 - **🌍 Cross-Platform** - Works on Windows, macOS, and Linux
-- **🔌 16 Tools** - Comprehensive Spotify control and management
+- **🔌 22 Tools** - Comprehensive Spotify control and management
 - **📦 One-Click Install** - MCPB bundle format for instant deployment
 
 ## ✨ What Can You Do?
@@ -69,27 +69,68 @@
 You: "What's playing on Spotify?"
 Claude: Shows currently playing track with artist and album info
 
+You: "Play some upbeat jazz music"
+Claude: Searches for jazz tracks and starts playing them instantly
+
 You: "Create a workout playlist with high-energy tracks"
 Claude: Searches for energetic songs and creates a custom playlist
+
+You: "Play my workout playlist"
+Claude: Finds and plays your workout playlist immediately
 
 You: "Analyze my Discover Weekly and tell me the vibe"
 Claude: Provides audio feature analysis with energy, danceability, mood stats
 
-You: "Find me some chill jazz for studying"
-Claude: Searches catalog and gives you curated recommendations
-
 You: "Skip to the next track and turn up the volume"
 Claude: Controls playback instantly
 ```
+
+## 🎵 Enhanced Smart Play
+
+The new **Smart Play** functionality makes controlling Spotify more intuitive than ever:
+
+### 🔄 Resume Playback
+```
+You: "Play"
+Claude: Resumes your current playback instantly
+```
+
+### 🎶 Play Music by Search
+```
+You: "Play some chill indie rock"
+Claude: Searches for indie rock tracks and starts playing the top results
+
+You: "Play tracks by The Beatles"
+Claude: Finds Beatles songs and starts a Beatles listening session
+```
+
+### 📝 Play Playlists by Name
+```
+You: "Play my workout playlist"
+Claude: Searches your playlists and plays your workout mix
+
+You: "Play Discover Weekly"
+Claude: Finds and plays your Discover Weekly automatically
+```
+
+### 🧠 Context-Aware Playing
+```
+You: Create a playlist called "Study Music"
+Claude: Creates the playlist successfully
+You: "Play Study Music"
+Claude: Recognizes the recently created playlist and plays it immediately
+```
+
+The smart play functionality automatically detects what you want based on your query - no need to specify whether you want tracks or playlists!
 
 ## 🚀 Quick Start
 
 ### For Users (Easiest)
 
 1. **Download** the latest bundle from [releases](https://github.com/fabioc-aloha/spotify-mcpb/releases/latest)
-2. **Double-click** `spotify-mcpb-0.2.2.mcpb` to install in Claude Desktop
-3. **Get credentials** from [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)
-4. **Setup token**: Ask Claude _"Help me get a Spotify refresh token"_
+2. **Get credentials** from [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)
+3. **Generate token**: Run `npm run get-token` in the project directory to get your refresh token
+4. **Install bundle**: Double-click `spotify-mcpb-0.2.4.mcpb` and enter all three credentials
 5. **Start using**: _"What's playing on Spotify?"_ 🎵
 
 **⏱️ Setup time: ~5 minutes** | See [SETUP.md](SETUP.md) for detailed instructions
@@ -111,7 +152,7 @@ npm start
 
 # Build bundle (optional)
 npm install -g @anthropic-ai/mcpb
-mcpb pack . spotify-mcpb-0.2.2.mcpb
+mcpb pack . spotify-mcpb-0.2.4.mcpb
 ```
 
 See [BUNDLE.md](BUNDLE.md) for complete build instructions.
@@ -119,7 +160,11 @@ See [BUNDLE.md](BUNDLE.md) for complete build instructions.
 ## 🎯 Features
 
 ### 🎮 Playback Control
-- **Play/Pause** - Control playback state
+- **Smart Play** - Intelligent play function that can:
+  - Resume playback (no parameters)
+  - Play search results (with query: "play jazz music")
+  - Play playlists by name ("play my workout playlist")
+  - Context-aware playlist detection (remembers recently created playlists)
 - **Skip Tracks** - Next/previous track navigation
 - **Volume Control** - Set volume level (0-100)
 - **Playback Info** - Get current track and full playback state
@@ -136,6 +181,12 @@ See [BUNDLE.md](BUNDLE.md) for complete build instructions.
 - **Add Tracks** - Smart track addition with automatic deduplication
 - **View Playlists** - Get detailed playlist information
 - **List User Playlists** - Browse all your playlists
+
+### 🎵 User Library Management
+- **Liked Songs** - Access and manage your saved tracks
+- **Save/Remove Tracks** - Add or remove tracks from your library
+- **Library Status** - Check if tracks are already saved
+- **Saved Albums** - Browse and manage your saved albums
 
 ### 📊 Audio Analysis
 - **Track Features** - Get detailed audio characteristics:
@@ -163,33 +214,41 @@ See [BUNDLE.md](BUNDLE.md) for complete build instructions.
 
 ## 📦 Installation
 
-## 🛠️ Available Tools (16 Total)
+## 🛠️ Available Tools (22 Total)
 
 ### Setup & Authentication
 0. `spotify_get_refresh_token` - Interactive OAuth flow (no manual scripts needed!)
 
 ### Playback Control
-1. `spotify_play` - Resume playback
-2. `spotify_pause` - Pause playback
-3. `spotify_next_track` - Skip to next track
-4. `spotify_previous_track` - Skip to previous track
-5. `spotify_set_volume` - Set volume (0-100)
+1. `spotify_play` - Smart play function: Resume playback (no params), play search results (with query), or play playlist by name
+2. `spotify_play_playlist` - Play a specific playlist by name or ID
+3. `spotify_pause` - Pause playback
+4. `spotify_next_track` - Skip to next track
+5. `spotify_previous_track` - Skip to previous track
+6. `spotify_set_volume` - Set volume (0-100)
 
 ### Track Info & Search
-6. `spotify_get_current_track` - Get currently playing track
-7. `spotify_get_playback_state` - Get full playback state
-8. `spotify_search_tracks` - Search Spotify catalog
+7. `spotify_get_current_track` - Get currently playing track
+8. `spotify_get_playback_state` - Get full playback state
+9. `spotify_search_tracks` - Search Spotify catalog
 
 ### Playlist Management
-9. `spotify_create_playlist` - Create new playlist
-10. `spotify_add_tracks_to_playlist` - Add tracks with deduplication
-11. `spotify_get_playlist` - Get playlist details
-12. `spotify_get_user_playlists` - List user's playlists
+10. `spotify_create_playlist` - Create new playlist
+11. `spotify_add_tracks_to_playlist` - Add tracks with deduplication
+12. `spotify_get_playlist` - Get playlist details
+13. `spotify_get_user_playlists` - List user's playlists
+
+### User Library Management
+14. `spotify_get_saved_tracks` - Get user's saved tracks (Liked Songs)
+15. `spotify_save_tracks` - Save tracks to library (add to Liked Songs)
+16. `spotify_remove_saved_tracks` - Remove tracks from library
+17. `spotify_check_saved_tracks` - Check if tracks are saved in library
+18. `spotify_get_saved_albums` - Get user's saved albums
 
 ### Recommendations & Analysis
-13. `spotify_get_recommendations` - Get track recommendations
-14. `spotify_get_audio_features` - Get audio features for tracks
-15. `spotify_analyze_playlist` - Analyze playlist statistics
+19. `spotify_get_recommendations` - Get track recommendations
+20. `spotify_get_audio_features` - Get audio features for tracks
+21. `spotify_analyze_playlist` - Analyze playlist statistics
 
 ## 📚 Documentation
 
@@ -216,7 +275,7 @@ Contributions are welcome! Here's how you can help:
 - **Total Files**: 1,767+ files
 - **Dependencies**: 60 production packages
 - **Code Quality**: 0 vulnerabilities
-- **MCP Tools**: 16 comprehensive tools
+- **MCP Tools**: 22 comprehensive tools
 - **API Compliance**: 100% (verified October 2025)
 
 ## 🔗 Related Projects

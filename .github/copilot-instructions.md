@@ -19,12 +19,12 @@
 - ❌ **Do NOT call this project "spotify-dxt"** (that's the original macOS project by Kenneth Lien)
 - ✅ **Credit Original**: Always acknowledge [Kenneth Lien's spotify-dxt](https://github.com/kenneth-lien/spotify-dxt) as the original inspiration
 
-### Authentication & Setup (Critical Learnings v0.2.2)
-- ✅ **Refresh Token is Optional**: manifest.json has `required: false` for refresh_token
-- ✅ **Graceful Degradation**: Server starts without refresh token, shows warnings
-- ✅ **Interactive Setup**: Users get refresh token via `spotify_get_refresh_token` tool after installation
+### Authentication & Setup (Final v0.2.2 - Simplified)
+- ✅ **All Three Parameters Required**: manifest.json now requires client_id, client_secret, and refresh_token
+- ✅ **Simple Token Generation**: Users run `npm run get-token` script before installation
+- ✅ **One-Step Setup**: Enter all credentials during Claude Desktop installation
 - ✅ **Use 127.0.0.1**: Always use 127.0.0.1 instead of localhost for OAuth redirects
-- ⚠️ **Authentication Checks**: ALL handler methods MUST call `ensureReady()` before operations
+- ✅ **No Complex OAuth**: Removed automatic OAuth flow from MCP server, use standalone script
 
 ### Bundle Creation
 ✅ **Directory renamed**: The directory is now named `spotify-mcpb`, so `mcpb pack` creates correctly named bundles!

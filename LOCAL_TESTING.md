@@ -22,7 +22,7 @@ Quick guide for testing the Spotify MCPB server locally during development.
 4. **Server should start with warning**:
    ```json
    {"level":"warn","event":"spotify_controller_partially_initialized","message":"No refresh token provided. Only token generation tools will work."}
-   {"level":"info","event":"server_started","name":"spotify-mcpb","version":"0.2.2"}
+   {"level":"info","event":"server_started","name":"spotify-mcpb","version":"0.2.4"}
    ```
 
 ## 🛠️ Available NPM Scripts
@@ -33,7 +33,7 @@ npm run test     # Check syntax of all JS files
 npm run validate # Validate manifest.json
 npm run bundle   # Create MCPB bundle
 npm run clean    # Remove bundle files
-npm run get-token # Get Spotify refresh token (interactive)
+npm run get-token # Get Spotify refresh token (interactive) - WORKS GREAT!
 ```## 📝 Configuration
 
 ### Required Credentials (.env file)
@@ -53,45 +53,40 @@ LOG_LEVEL=debug
 
 ### Getting Refresh Token (Local Development)
 
-For local testing, use the built-in helper script:
+For local testing, use the built-in helper script (works great!):
 
 ```bash
 npm run get-token
 ```
 
 This will:
-1. Show you an authorization URL to visit
-2. Open a local server on port 8888
-3. Handle the OAuth callback automatically
-4. Display your refresh token
-5. Give you the exact line to add to your `.env` file
+1. ✅ Start a local server on port 8888
+2. ✅ Open your browser automatically to Spotify's authorization page
+3. ✅ Handle the OAuth callback automatically
+4. ✅ Display your refresh token
+5. ✅ Copy it to your clipboard (on supported systems)
+6. ✅ Give you the exact line to add to your `.env` file
 
 **Alternative Methods:**
-- Use the MCP tool in Claude Desktop (if you have it set up)
+- Use `npm run manual-token` for step-by-step manual instructions
 - Follow the manual process in `SETUP.md`
-- Use any OAuth 2.0 flow that supports the authorization code grant
 
 ## 🧪 Testing Workflow
 
 ### 1. Test Server Startup
 ```bash
 npm start
-# Should see: server_started with version 0.2.2
+# Should see: server_started with version 0.2.4
 # Should warn about missing refresh token
 ```
 
-### 2. Test with Partial Credentials
-- Server starts with only CLIENT_ID and CLIENT_SECRET ✅
-- Shows warning about missing refresh token ✅
-- Only `spotify_get_refresh_token` tool will work ✅
-
-### 3. Test with Full Credentials
-- Add SPOTIFY_REFRESH_TOKEN to `.env`
+### 2. Test with Full Credentials
+- Add SPOTIFY_REFRESH_TOKEN to `.env` (use `npm run get-token` to get it)
 - Restart server: `npm start`
 - Should see: server_started with no warnings ✅
 - All 16 tools should work ✅
 
-### 4. Test Bundle Creation
+### 3. Test Bundle Creation
 ```bash
 npm run validate  # Check manifest
 npm run bundle    # Create .mcpb file
@@ -120,7 +115,7 @@ npm run bundle    # Create .mcpb file
 ## 📋 Verification Checklist
 
 - [ ] Server starts without errors
-- [ ] Shows correct version (0.2.2)
+- [ ] Shows correct version (0.2.4)
 - [ ] Warns about missing refresh token (if not provided)
 - [ ] Syntax validation passes (`npm run test`)
 - [ ] Manifest validation passes (`npm run validate`)

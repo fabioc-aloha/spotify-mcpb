@@ -185,6 +185,47 @@ export class SpotifyWebController {
   }
 
   /**
+   * Play a specific playlist by ID or URI
+   */
+  async playPlaylist(playlistId) {
+    // Convert playlist ID to context URI if needed
+    let contextUri;
+    if (playlistId.startsWith('spotify:playlist:')) {
+      contextUri = playlistId;
+    } else if (playlistId.startsWith('spotify:')) {
+      contextUri = playlistId;
+    } else {
+      // Plain ID, convert to URI
+      contextUri = `spotify:playlist:${playlistId}`;
+    }
+
+    return this.executeWithRetry(() => 
+      this.spotifyApi.play({ context_uri: contextUri })
+    );
+  }
+
+  /**
+   * Play specific tracks by URIs
+   */
+  async playTracks(trackUris) {
+    // Ensure all URIs are in correct format
+    const formattedUris = trackUris.map(uri => {
+      if (uri.startsWith('spotify:track:')) {
+        return uri;
+      } else if (uri.startsWith('spotify:')) {
+        return uri;
+      } else {
+        // Plain ID, convert to URI
+        return `spotify:track:${uri}`;
+      }
+    });
+
+    return this.executeWithRetry(() => 
+      this.spotifyApi.play({ uris: formattedUris })
+    );
+  }
+
+  /**
    * Pause
    */
   async pause() {
@@ -302,5 +343,65 @@ export class SpotifyWebController {
    */
   async getAudioFeaturesForTrack(trackId) {
     return this.executeWithRetry(() => this.spotifyApi.getAudioFeaturesForTrack(trackId));
+  }
+
+  // === USER LIBRARY MANAGEMENT ===
+
+  /**
+   * Get user's saved tracks (Liked Songs)
+   */
+  async getSavedTracks(options = {}) {
+    const { limit = 20, offset = 0, market } = options;
+    return this.executeWithRetry(() =>
+      this.spotifyApi.getMySavedTracks({
+        limit,
+        offset,
+        market
+      })
+    );
+  }
+
+  /**
+   * Save tracks to user's library
+   */
+  async saveTracks(trackIds) {
+    if (!Array.isArray(trackIds)) {
+      trackIds = [trackIds];
+    }
+    return this.executeWithRetry(() => this.spotifyApi.addToMySavedTracks(trackIds));
+  }
+
+  /**
+   * Remove tracks from user's library
+   */
+  async removeSavedTracks(trackIds) {
+    if (!Array.isArray(trackIds)) {
+      trackIds = [trackIds];
+    }
+    return this.executeWithRetry(() => this.spotifyApi.removeFromMySavedTracks(trackIds));
+  }
+
+  /**
+   * Check if tracks are saved in user's library
+   */
+  async checkSavedTracks(trackIds) {
+    if (!Array.isArray(trackIds)) {
+      trackIds = [trackIds];
+    }
+    return this.executeWithRetry(() => this.spotifyApi.containsMySavedTracks(trackIds));
+  }
+
+  /**
+   * Get user's saved albums
+   */
+  async getSavedAlbums(options = {}) {
+    const { limit = 20, offset = 0, market } = options;
+    return this.executeWithRetry(() =>
+      this.spotifyApi.getMySavedAlbums({
+        limit,
+        offset,
+        market
+      })
+    );
   }
 }
